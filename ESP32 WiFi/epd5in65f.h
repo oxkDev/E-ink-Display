@@ -13,24 +13,24 @@
                       EPD_5IN65F
 ******************************************************************************/
 
-static void EPD_5IN65F_BusyHigh(void)// If BUSYN=0 then waiting
+static bool EPD_5IN65F_BusyHigh(void)// If BUSYN=0 then waiting
 {
-    while(!(digitalRead(PIN_SPI_BUSY)));
+    return EPD_WaitUntilIdle(200);
 }
 
-static void EPD_5IN65F_BusyLow(void)// If BUSYN=1 then waiting
+static bool EPD_5IN65F_BusyLow(void)// If BUSYN=1 then waiting
 {
-    while(digitalRead(PIN_SPI_BUSY));
+    return EPD_WaitUntilIdle_high(200);
 }
 
-static void EPD_5IN65F_Show(void)
+static bool EPD_5IN65F_Show(void)
 {
     EPD_SendCommand(0x04);//0x04
-    EPD_5IN65F_BusyHigh();
+    bool success = EPD_5IN65F_BusyHigh();
     EPD_SendCommand(0x12);//0x12
-    EPD_5IN65F_BusyHigh();
+    success &= EPD_5IN65F_BusyHigh();
     EPD_SendCommand(0x02);//0x02
-    EPD_5IN65F_BusyLow();
+    success &= EPD_5IN65F_BusyLow();
 	delay(200);
     Serial.print("EPD_5IN65F_Show END\r\n");
 
@@ -38,6 +38,8 @@ static void EPD_5IN65F_Show(void)
     EPD_SendCommand(0x07);//sleep
     EPD_SendData(0xA5);
     delay(100);
+
+    return success;
 }
 
 int EPD_5IN65F_init() 

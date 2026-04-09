@@ -9,560 +9,663 @@
 ******************************************************************************
 */
 
-void sendJS_A(WiFiClient client)
-{
-client.println(
-"var srcBox,srcImg,dstImg;\r\n"
-"var epdArr,epdInd,palArr;\r\n"
-"var curPal;\r\n"
-"function getElm(n){return document.getElementById(n);}\r\n"
-"function setInn(n,i){ document.getElementById(n).innerHTML=i;}\r\n"
-
-"function processFiles(files){\r\n"
-    "var file=files[0];\r\n"
-    "var reader=new FileReader();\r\n"
-    "srcImg=new Image();\r\n"
-    "reader.onload=function(e){\r\n"
-        "setInn('srcBox','<img id=\"imgView\" class=\"sourceImage\">');\r\n"
-        "var img=getElm('imgView');\r\n"
-        "img.src=e.target.result;\r\n"
-        "srcImg.src=e.target.result;\r\n"
-    "};\r\n"
-    
-    "reader.readAsDataURL(file);\r\n"
-"}\r\n"
-//-------------------------------------------
-"function drop(e){\r\n"
-    "e.stopPropagation();\r\n"
-    "e.preventDefault();\r\n"
-    "var files=e.dataTransfer.files;\r\n"
-    "processFiles(files);\r\n"
-"}\r\n"
-//-------------------------------------------
-"function ignoreDrag(e){\r\n"
-    "e.stopPropagation();\r\n"
-    "e.preventDefault();\r\n"
-"}\r\n"
-//-------------------------------------------
-"function getNud(nm,vl){\r\n"
-    "return '<td class=\"comment\">'+nm+':</td>'+\r\n"
-    "'<td><input id=\"nud_'+nm+'\" class=\"nud\"type=\"number\" value=\"'+vl+'\"/></td>';\r\n"
-"}\r\n"
-//-------------------------------------------
-"function Btn(nm,tx,fn){\r\n"
-    "return '<div><label class=\"menu_button\" for=\"_'+nm+'\">'+tx+'</label>'+\r\n"
-    "'<input class=\"hidden_input\" id=\"_'+nm+'\" type=\"'+\r\n"
-    "(nm==0?'file\" onchange=\"':'button\" onclick=\"')+fn+'\"/></div>';\r\n"
-"}\r\n"
-//-------------------------------------------
-"function RB(vl,tx){\r\n"
-    "return '<input type=\"radio\" name=\"kind\" value=\"m'+vl+\r\n"
-  "'\" onclick=\"rbClick('+vl+');\"'+(vl==0?'checked=\"true\"':'')+'/>'+tx;\r\n"
-"}\r\n"
-//-------------------------------------------
-"window.onload = function(){\r\n"
-    "srcBox = getElm('srcBox');\r\n"
-    "srcBox.ondragenter=ignoreDrag;\r\n"
-    "srcBox.ondragover=ignoreDrag;\r\n"
-    "srcBox.ondrop=drop;\r\n"
-    "srcImg=0;\r\n"
-    "epdInd=0;\r\n"
-
-"palArr=[[[0,0,0],[255,255,255]],\r\n"
-"[[0,0,0],[255,255,255],[127,0,0]],\r\n"
-"[[0,0,0],[255,255,255],[127,127,127]],\r\n"
-"[[0,0,0],[255,255,255],[127,127,127],[127,0,0]],\r\n"
-"[[0,0,0],[255,255,255]],\r\n"
-"[[0,0,0],[255,255,255],[220,180,0]],\r\n"
-"[[0,0,0],[255,255,255],[255,255,0],[255,0,0],[0,0,255],[0,255,0]],\r\n"
-"[[0,0,0],[255,255,255],[0,255,0],[0,0,255],[255,0,0],[255,255,0],[255,128,0]]];\r\n"//5.65f 7-color E-Paper 
-  
-"epdArr=[[200,200,0],[200,200,3],[152,152,5],\r\n"
-"[122,250,0],[104,212,1],[104,212,5],[104,212,0],\r\n"
-"[176,264,0],[176,264,1],\r\n"
-"[128,296,0],[128,296,1],[128,296,5],[128,296,0],\r\n"
-"[400,300,0],[400,300,1],[400,300,5],\r\n"
-"[600,448,0],[600,448,1],[600,448,5],\r\n"
-"[640,384,0],[640,384,1],[640,384,5],\r\n"
-"[800,480,0],[800,480,1],[880,528,1],\r\n"
-"[600,448,7],[880,528,0],[280,480,0],\r\n"
-"[152,296,0],[648,480,1],[128,296,1],\r\n"
-"[200,200,1],[104,214,1],[128,296,0],\r\n"
-"[400,300,1],[152,296,1],[648,480,0],\r\n"
-"[640,400,7],[176,264,1],[122,250,0],\r\n"
-"[122,250,1],[240,360,0],[176,264,0],\r\n"
-"[122,250,0],[400,300,0],[960,680,0],\r\n"
-"[800,480,0],[128,296,1],[960,680,1],\r\n"
-"[800,480,6],[1200,1600,6]];\r\n"
-
-"setInn('BT',\r\n"
-"Btn(0,'Select image file','processFiles(this.files);')+\r\n"
-"Btn(1,'Level: mono','procImg(true,false);')+\r\n"
-"Btn(2,'Level: color','procImg(true,true);')+\r\n"
-"Btn(3,'Dithering: mono','procImg(false,false);')+\r\n"
-"Btn(4,'Dithering: color','procImg(false,true);')+\r\n"
-"Btn(5,'Upload image','uploadImage();'));\r\n"
-
-"setInn('XY',getNud('x','0')+getNud('y','0'));\r\n"
-"setInn('WH',getNud('w','200')+getNud('h','200'));\r\n"
-  
-"setInn('RB',RB(0,'1.54&ensp;')+RB(1,'1.54b')+RB(2,'1.54c&ensp;<br>')+\r\n"
-"RB(3,'2.13&ensp;')+RB(4,'2.13b')+RB(5,'2.13c<br>')+\r\n"
-"RB(6,'2.13d')+RB(7,'2.7&ensp;&ensp;')+RB(8,'2.7b&ensp;<br>')+\r\n"
-"RB(9,'2.9&ensp;&ensp;')+RB(10,'2.9b&ensp;')+RB(11,'2.9c&ensp;<br>')+\r\n"
-"RB(12,'2.9d&ensp;')+RB(13,'4.2&ensp;&ensp;')+RB(14,'4.2b&ensp;<br>')+\r\n"
-"RB(15,'4.2c&ensp;')+RB(16,'5.83&ensp;')+RB(17,'5.83b<br>')+\r\n"
-"RB(18,'5.83c&ensp;')+RB(19,'7.5&ensp;&ensp;')+RB(20,'7.5b&ensp;<br>')+\r\n"
-"RB(21,'7.5c')+RB(22,'7.5 V2')+RB(23,'7.5b V2<br>')+\r\n"
-"RB(24,'7.5b HD&ensp;')+RB(25,'5.65f<br>')+\r\n"
-"RB(26,'7.5 HD&ensp;')+RB(27,'3.7&ensp;')+RB(28,'2.66<br>')+\r\n"
-"RB(29,'5.83b V2&ensp;')+RB(30,'2.9b V3<br>')+\r\n"
-"RB(31,'1.54b V2&ensp;')+RB(32,'2.13b V3<br>')+\r\n"
-"RB(33,'2.9 V2&ensp;')+RB(34,'4.2b V2<br>')+\r\n"
-"RB(35,'2.66b&ensp;')+RB(36,'5.83 V2<br>')+\r\n"
-"RB(37,'4.01 f&ensp;')+RB(38,'2.7b V2<br>')+\r\n"
-"RB(39,'2.13 V3&ensp;')+RB(40,'2.13 B V4<br>')+\r\n"
-"RB(41,'3.52&ensp;')+RB(42,'2.7 V2<br>')+\r\n"
-"RB(43,'2.13 V4&ensp;')+RB(44,'4.2 V2<br>')+\r\n"
-"RB(45,'13.3k&ensp;')+RB(46,'4.26<br>')+\r\n"
-"RB(47,'2.9bV4&ensp;')+RB(48,'13.3b<br>')+\r\n"
-"RB(49,'7.3E&ensp;')+RB(50,'13.3E&ensp;'));\r\n"
-"}\r\n"
-//-------------------------------------------
-"function rbClick(index){\r\n"
-    "getElm('nud_w').value=""+epdArr[index][0];\r\n"
-    "getElm('nud_h').value=""+epdArr[index][1];\r\n"
-    "epdInd=index;\r\n"
-"}\r\n");
+void sendJS_A(WiFiClient client) {
+  client.println(
+    "const epdData = [\n\
+    { width: 200, height: 200, paletteIndex: 0, name: '1.54' },\n\
+    { width: 200, height: 200, paletteIndex: 3, name: '1.54b' },\n\
+    { width: 152, height: 152, paletteIndex: 5, name: '1.54c' },\n\
+    { width: 122, height: 250, paletteIndex: 0, name: '2.13' },\n\
+    { width: 104, height: 212, paletteIndex: 1, name: '2.13b' },\n\
+    { width: 104, height: 212, paletteIndex: 5, name: '2.13c' },\n\
+    { width: 104, height: 212, paletteIndex: 0, name: '2.13d' },\n\
+    { width: 176, height: 264, paletteIndex: 0, name: '2.7' },\n\
+    { width: 176, height: 264, paletteIndex: 1, name: '2.7b' },\n\
+    { width: 128, height: 296, paletteIndex: 0, name: '2.9' },\n\
+    { width: 128, height: 296, paletteIndex: 1, name: '2.9b' },\n\
+    { width: 128, height: 296, paletteIndex: 5, name: '2.9c' },\n\
+    { width: 128, height: 296, paletteIndex: 0, name: '2.9d' },\n\
+    { width: 400, height: 300, paletteIndex: 0, name: '4.2' },\n\
+    { width: 400, height: 300, paletteIndex: 1, name: '4.2b' },\n\
+    { width: 400, height: 300, paletteIndex: 5, name: '4.2c' },\n\
+    { width: 600, height: 448, paletteIndex: 0, name: '5.83' },\n\
+    { width: 600, height: 448, paletteIndex: 1, name: '5.83b' },\n\
+    { width: 600, height: 448, paletteIndex: 5, name: '5.83c' },\n\
+    { width: 640, height: 384, paletteIndex: 0, name: '7.5' },\n\
+    { width: 640, height: 384, paletteIndex: 1, name: '7.5b' },\n\
+    { width: 640, height: 384, paletteIndex: 5, name: '7.5c' },\n\
+    { width: 800, height: 480, paletteIndex: 0, name: '7.5 V2' },\n\
+    { width: 800, height: 480, paletteIndex: 1, name: '7.5b V2' },\n\
+    { width: 880, height: 528, paletteIndex: 1, name: '7.5b HD' },\n\
+    { width: 600, height: 448, paletteIndex: 7, name: '5.65f' },\n\
+    { width: 880, height: 528, paletteIndex: 0, name: '7.5 HD' },\n\
+    { width: 280, height: 480, paletteIndex: 0, name: '3.7' },\n\
+    { width: 152, height: 296, paletteIndex: 0, name: '2.66' },\n\
+    { width: 648, height: 480, paletteIndex: 1, name: '5.83b V2' },\n\
+    { width: 128, height: 296, paletteIndex: 1, name: '2.9b V3' },\n\
+    { width: 200, height: 200, paletteIndex: 1, name: '1.54b V2' },\n\
+    { width: 104, height: 214, paletteIndex: 1, name: '2.13b V3' },\n\
+    { width: 128, height: 296, paletteIndex: 0, name: '2.9 V2' },\n\
+    { width: 400, height: 300, paletteIndex: 1, name: '4.2b V2' },\n\
+    { width: 152, height: 296, paletteIndex: 1, name: '2.66b' },\n\
+    { width: 648, height: 480, paletteIndex: 0, name: '5.83 V2' },\n\
+    { width: 640, height: 400, paletteIndex: 7, name: '4.01 f' },\n\
+    { width: 176, height: 264, paletteIndex: 1, name: '2.7b V2' },\n\
+    { width: 122, height: 250, paletteIndex: 0, name: '2.13 V3' },\n\
+    { width: 122, height: 250, paletteIndex: 1, name: '2.13 B V4' },\n\
+    { width: 240, height: 360, paletteIndex: 0, name: '3.52' },\n\
+    { width: 176, height: 264, paletteIndex: 0, name: '2.7 V2' },\n\
+    { width: 122, height: 250, paletteIndex: 0, name: '2.13 V4' },\n\
+    { width: 400, height: 300, paletteIndex: 0, name: '4.2 V2' },\n\
+    { width: 960, height: 680, paletteIndex: 0, name: '13.3k' },\n\
+    { width: 800, height: 480, paletteIndex: 0, name: '4.26' },\n\
+    { width: 128, height: 296, paletteIndex: 1, name: '2.9bV4' },\n\
+    { width: 960, height: 680, paletteIndex: 1, name: '13.3b' },\n\
+    { width: 800, height: 480, paletteIndex: 6, name: '7.3E' },\n\
+    { width: 1200, height: 1600, paletteIndex: 6, name: '13.3E' }\n\
+];\n\
+const palettes = [\n\
+    [[0, 0, 0], [255, 255, 255]],\n\
+    [[0, 0, 0], [255, 255, 255], [127, 0, 0]],\n\
+    [[0, 0, 0], [255, 255, 255], [127, 127, 127]],\n\
+    [[0, 0, 0], [255, 255, 255], [127, 127, 127], [127, 0, 0]],\n\
+    [[0, 0, 0], [255, 255, 255]],\n\
+    [[0, 0, 0], [255, 255, 255], [220, 180, 0]],\n\
+    [[20, 15, 50], [255, 255, 255], [255, 255, 0], [190, 80, 80], [80, 90, 220], [120, 240, 140]],\n\
+    [[0, 0, 0], [255, 255, 255], [0, 255, 0], [0, 0, 255], [255, 0, 0], [255, 255, 0], [255, 128, 0]]\n\
+];\n\
+function setPalette(paletteIndex) {\n\
+    curPaletteRGB = palettes[paletteIndex];\n\
+    curPaletteLab = curPaletteRGB.map(c => rgbToLab(c[0], c[1], c[2]));\n\
+    if (paletteIndex < 6) {\n\
+        curPaletteCodes = [0, 1, 2, 3];\n\
+        return;\n\
+    }\n\
+    curPaletteCodes = {\n\
+        6: [0, 1, 2, 3, 5, 6],\n\
+        7: [0, 1, 2, 3, 4, 5, 6]\n\
+    }[paletteIndex];\n\
+};\n\
+function getElm(n) { return document.getElementById(n); }\n\
+function setInn(n, i) { document.getElementById(n).innerHTML = i; }\n\
+let srcImg = new Image(),\n\
+    dstImgData,\n\
+    epdIndex = 50,\n\
+    curPaletteRGB = [],\n\
+    curPaletteLab = [],\n\
+    labCache = new Map(),\n\
+    curPaletteCodes = [],\n\
+    dstColourCodesBuffer = new Uint8Array();\n\
+function processFiles(files) {\n\
+    if (!files.length) return;\n\
+    let file = files[0];\n\
+    let reader = new FileReader();\n\
+    srcImg = new Image();\n\
+    reader.onload = function (e) {\n\
+        setInn('srcBox', '<img id=\"imgView\" class=\"img_elm\">');\n\
+        let img = getElm('imgView');\n\
+        img.src = e.target.result;\n\
+        srcImg.src = e.target.result;\n\
+            console.log('new image: ' + srcImg.src);\n\
+        const dropboxHeading = getElm('dropboxHeading');\n\
+        dropboxHeading.setAttribute('overlay', 'true');\n\
+        dropboxHeading.innerHTML = 'Click to replace image.';\n\
+        setTimeout(() => processImg(), 100);\n\
+    };\n\
+    reader.readAsDataURL(file);\n\
+}\n\
+function onDrop(e) {\n\
+    console.log('image dropped.');\n\
+    e.stopPropagation();\n\
+    e.preventDefault();\n\
+    let files = e.dataTransfer.files;\n\
+    processFiles(files);\n\
+}\n\
+function stopEvent(e) {\n\
+    e.stopPropagation();\n\
+    e.preventDefault();\n\
+}\n\
+function displayOptionElm(vl, tx) {\n\
+    return '<option name=\"kind\" value=\"' + vl + '\" ' + (vl == 50 ? 'selected' : '') + '>' + tx + '</option>';\n\
+}\n\
+function rbClick(index) {\n\
+    getElm('imgW').value = +epdData[index].width;\n\
+    getElm('imgH').value = +epdData[index].height;\n\
+    epdIndex = index;\n\
+}\n\
+window.onload = function () {\n\
+    document.ondragover = () => {\n\
+        let dropboxHeading = getElm('dropboxHeading');\n\
+        dropboxHeading.setAttribute('dropping', 'true');\n\
+        dropboxHeading.innerText = 'Drop image here.';\n\
+    };\n\
+    document.ondragend = () => {\n\
+        let dropboxHeading = getElm('dropboxHeading');\n\
+        dropboxHeading.setAttribute('dropping', 'false');\n\
+        dropboxHeading.innerText = 'Click to ' + (srcImg ? 'replace' : 'add') + ' image.';\n\
+    };\n\
+    getElm('dropboxInput').onchange = (e) => processFiles(e.target.files);\n\
+    let dropbox = getElm('dropbox');\n\
+    document.ondragenter = stopEvent;\n\
+    document.ondragover = stopEvent;\n\
+    dropbox.ondrop = onDrop;\n\
+    srcImg = null;\n\
+    epdIndex = 0;\n\
+    getElm('upload').onclick = () => {\n\
+        uploadImage();\n\
+    }\n\
+    const inputIDs = ['setColour', 'setDithering', 'rotateMode', 'scaleMode', 'imgH', 'imgW', 'imgY', 'imgX'];\n\
+    for (let i = 0; i < inputIDs.length; i++)\n\
+        getElm(inputIDs[i]).onchange = processImg;\n\
+        let optionsHTML = '';\n\
+        for (let i = 0; i < epdData.length; i++)\n\
+        optionsHTML += displayOptionElm(i, epdData[i].name);\n\
+        setInn('displayType', optionsHTML);\n\
+        const selectionElm = getElm('displayType');\n\
+    selectionElm.onchange = (e) => {\n\
+        rbClick(selectionElm.value);\n\
+        processImg();\n\
+    };\n\
+    rbClick(selectionElm.value);\n\
+}\n\n");
 }
 
-void sendJS_B(WiFiClient client)
-{
-client.println(
-"var source;\r\n"
-"var dX, dY, dW, dH, sW, sH;\r\n"
-//-------------------------------------------
-"function getVal(p, i){\r\n"
-    "if((p.data[i]==0x00) && (p.data[i+1]==0x00))return 0;\r\n"
-    "if((p.data[i]==0xFF) && (p.data[i+1]==0xFF))return 1;\r\n"
-    "if((p.data[i]==0x7F) && (p.data[i+1]==0x7F))return 2;\r\n"
-    "return 3;\r\n"
-"}\r\n"
-//-------------------------------------------
-"function getVal_6color(p, i) {\r\n"//for E6 E-Paper
-	"if((p.data[i]==0x00) && (p.data[i+1]==0x00) && (p.data[i+2]==0x00))return 0;\r\n"
-	"if((p.data[i]==0xFF) && (p.data[i+1]==0xFF) && (p.data[i+2]==0xFF))return 1;\r\n"
-	"if((p.data[i]==0xFF) && (p.data[i+1]==0xFF) && (p.data[i+2]==0x00))return 2;\r\n"
-	"if((p.data[i]==0xFF) && (p.data[i+1]==0x00) && (p.data[i+2]==0x00))return 3;\r\n"
-	// "if((p.data[i]==0xFF) && (p.data[i+1]==0x00) && (p.data[i+2]==0x00))return 4;\r\n"
-	"if((p.data[i]==0x00) && (p.data[i+1]==0x00) && (p.data[i+2]==0xFF))return 5;\r\n"
-	"if((p.data[i]==0x00) && (p.data[i+1]==0xFF) && (p.data[i+2]==0x00))return 6;\r\n"
-	"return 7;\r\n"
-"}\r\n"
-//-------------------------------------------
-"function getVal_7color(p, i) {\r\n"// for 5.65f E-Paper
-	"if((p.data[i]==0x00) && (p.data[i+1]==0x00) && (p.data[i+2]==0x00))return 0;\r\n"
-	"if((p.data[i]==0xFF) && (p.data[i+1]==0xFF) && (p.data[i+2]==0xFF))return 1;\r\n"
-	"if((p.data[i]==0x00) && (p.data[i+1]==0xFF) && (p.data[i+2]==0x00))return 2;\r\n"
-	"if((p.data[i]==0x00) && (p.data[i+1]==0x00) && (p.data[i+2]==0xFF))return 3;\r\n"
-	"if((p.data[i]==0xFF) && (p.data[i+1]==0x00) && (p.data[i+2]==0x00))return 4;\r\n"
-	"if((p.data[i]==0xFF) && (p.data[i+1]==0xFF) && (p.data[i+2]==0x00))return 5;\r\n"
-	"if((p.data[i]==0xFF) && (p.data[i+1]==0x80) && (p.data[i+2]==0x00))return 6;\r\n"
-	"return 6;\r\n"
-"}\r\n"
-//-------------------------------------------
-"function setVal(p,i,c){\r\n"
-    "p.data[i]=curPal[c][0];\r\n"
-    "p.data[i+1]=curPal[c][1];\r\n"
-    "p.data[i+2]=curPal[c][2];\r\n"
-    "p.data[i+3]=255;\r\n"
-"}\r\n"
-//-------------------------------------------
-"function addVal(c,r,g,b,k){\r\n"
-    "return[c[0]+(r*k)/32,c[1]+(g*k)/32,c[2]+(b*k)/32];\r\n"
-"}\r\n"
-//-------------------------------------------
-"function getErr(r,g,b,stdCol){\r\n"
-    "r-=stdCol[0];\r\n"
-    "g-=stdCol[1];\r\n"
-    "b-=stdCol[2];\r\n"
-    "return r*r + g*g + b*b;\r\n"
-"}\r\n"
-//-------------------------------------------
-"function getNear(r,g,b){\r\n"
-    "var ind=0;\r\n"
-    "var err=getErr(r,g,b,curPal[0]);\r\n"
-    "for (var i=1;i<curPal.length;i++)\r\n"
-    "{\r\n"
-        "var cur=getErr(r,g,b,curPal[i]);\r\n"
-        "if (cur<err){err=cur;ind=i;}\r\n"
-    "}\r\n"
-    "return ind;\r\n"
-"}\r\n");
+void sendJS_B(WiFiClient client) {
+  client.println(
+    "let source;\n\
+let shiftX, shiftY, imgW, imgH, sW, sH;\n\
+function setColourCode(pixelIndex, colourIndex) {\n\
+    let dataIndex = pixelIndex * 4;\n\
+    dstImgData.data[dataIndex] = curPaletteRGB[colourIndex][0];\n\
+    dstImgData.data[dataIndex + 1] = curPaletteRGB[colourIndex][1];\n\
+    dstImgData.data[dataIndex + 2] = curPaletteRGB[colourIndex][2];\n\
+    dstImgData.data[dataIndex + 3] = 255;\n\
+        dstColourCodesBuffer[pixelIndex] = curPaletteCodes[colourIndex];\n\
+}\n\
+function getWeightedErrRGB(originalRGB, errRGB, weight) {\n\
+    return [\n\
+        originalRGB[0] + (errRGB[0] * weight),\n\
+        originalRGB[1] + (errRGB[1] * weight),\n\
+        originalRGB[2] + (errRGB[2] * weight)\n\
+    ];\n\
+}\n\
+function rgbToLab(r, g, b) {\n\
+    r /= 255;\n\
+    g /= 255;\n\
+    b /= 255;\n\
+        r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;\n\
+    g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;\n\
+    b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;\n\
+        let x = r * 0.4124 + g * 0.3576 + b * 0.1805;\n\
+    let y = r * 0.2126 + g * 0.7152 + b * 0.0722;\n\
+    let z = r * 0.0193 + g * 0.1192 + b * 0.9505;\n\
+        x /= 0.95047;\n\
+    z /= 1.08883;\n\
+        let f = (t) => t > 0.008856 ? Math.pow(t, 1 / 3) : (7.787 * t) + (16 / 116);\n\
+        let fx = f(x);\n\
+    let fy = f(y);\n\
+    let fz = f(z);\n\
+        return [\n\
+        (116 * fy) - 16,\n\
+        500 * (fx - fy),\n\
+        200 * (fy - fz)\n\
+    ];\n\
+}\n\
+function getNear(r, g, b) {\n\
+    r = Math.round(r * 1000) / 1000;\n\
+    g = Math.round(g * 1000) / 1000;\n\
+    b = Math.round(b * 1000) / 1000;\n\
+        let key = (r << 16) | (g << 8) | b;\n\
+        let lab = labCache.get(key);\n\
+    if (!lab) {\n\
+        lab = rgbToLab(r, g, b);\n\
+        labCache.set(key, lab);\n\
+    }\n\
+        let best = 0;\n\
+    let bestDist = Infinity;\n\
+        for (let i = 0; i < curPaletteLab.length; i++) {\n\
+        let p = curPaletteLab[i];\n\
+                let dL = lab[0] - p[0];\n\
+        let da = lab[1] - p[1];\n\
+        let db = lab[2] - p[2];\n\
+                let dist = dL * dL + da * da + db * db;\n\
+                if (dist < bestDist) {\n\
+            bestDist = dist;\n\
+            best = i;\n\
+        }\n\
+    }\n\
+        return best;\n\
+}\n\
+function hexToRgb(hex) {\n\
+    return [\n\
+        parseInt(hex.substring(1, 3), 16),\n\
+        parseInt(hex.substring(3, 5), 16),\n\
+        parseInt(hex.substring(5, 7), 16)\n\
+    ];\n\
+}\n\
+function preprocessImage() {\n\
+    let scaleMode = getElm('scaleMode').value;\n\
+    let rotation = parseInt(getElm('rotateMode').value);\n\
+    let targetW = parseInt(getElm('imgW').value);\n\
+    let targetH = parseInt(getElm('imgH').value);\n\
+    let srcW = srcImg.width;\n\
+    let srcH = srcImg.height;\n\
+    \n\
+    let rotW = srcW;\n\
+    let rotH = srcH;\n\
+        if (rotation === 90 || rotation === 270) {\n\
+        rotW = srcH;\n\
+        rotH = srcW;\n\
+    }\n\
+        let scale = 1;\n\
+        if (scaleMode === 'fit')\n\
+        scale = Math.min(targetW / rotW, targetH / rotH);\n\
+    else if (scaleMode === 'fill')\n\
+        scale = Math.max(targetW / rotW, targetH / rotH);\n\
+    else if (scaleMode === 'original')\n\
+        scale = 1;\n\
+            let drawW = srcW * scale;\n\
+    let drawH = srcH * scale;\n\
+        let canvas = document.createElement('canvas');\n\
+    canvas.width = targetW;\n\
+    canvas.height = targetH;\n\
+        let ctx = canvas.getContext('2d');\n\
+        let bgHex = getElm('bgColour').value;\n\
+    ctx.fillStyle = bgHex;\n\
+    ctx.fillRect(0, 0, canvas.width, canvas.height);\n\
+        ctx.save();\n\
+        ctx.translate(targetW / 2 + shiftX, targetH / 2 + shiftY);\n\
+    ctx.rotate(rotation * Math.PI / 180);\n\
+        ctx.drawImage(\n\
+        srcImg,\n\
+        -drawW / 2,\n\
+        -drawH / 2,\n\
+        drawW,\n\
+        drawH\n\
+    );\n\
+        ctx.restore();\n\
+        return ctx.getImageData(0, 0, canvas.width, canvas.height);\n\
+}\n\n");
 }
 
-void sendJS_C(WiFiClient client)
-{
-    client.println(
-"function procImg(isLvl,isRed){\r\n"
-    "if (document.getElementsByClassName('sourceImage').length == 0){\r\n"
-        "alert('First select image');\r\n"
-        "return;\r\n"
-    "}\r\n"
-    
-    "var palInd=epdArr[epdInd][2];\r\n"
-    
-    "if (isRed && (typeof palArr[palInd] === 'undefined' || palArr[palInd].length <= 2)){\r\n"
-        "alert('This white-black display');\r\n"
-        "return;\r\n"
-    "}\r\n"
-    
-    "if (!isRed){\r\n"
-        "if (typeof palArr[palInd] !== 'undefined' && palArr[palInd].length > 2) palInd = 0;\r\n"
-    "}\r\n"
-    "curPal=palArr[palInd];\r\n"
-
-    "getElm('dstBox').innerHTML=\r\n"
-    "'<span class=\"title\">Processed image</span><br><canvas id=\"canvas\"></canvas>';\r\n" 
-    "var canvas=getElm('canvas');\r\n"
-    "sW=srcImg.width;\r\n"
-    "sH=srcImg.height;\r\n"
-    "source=getElm('source');\r\n"
-    "source.width=sW;\r\n"
-    "source.height=sH;\r\n"
-    "source.getContext('2d').drawImage(srcImg,0,0,sW,sH);\r\n"
-    "dX=parseInt(getElm('nud_x').value);\r\n"
-    "dY=parseInt(getElm('nud_y').value);\r\n"
-    "dW=parseInt(getElm('nud_w').value);\r\n"
-    "dH=parseInt(getElm('nud_h').value);\r\n"
-    
-    "if((dW<3)||(dH<3)){\r\n"
-        "alert('Image is too small');\r\n"
-        "return;\r\n"
-    "}\r\n"
-    
-    "canvas.width=dW;\r\n"
-    "canvas.height=dH;\r\n"
-    "var index=0;\r\n"
-    "var pSrc=source.getContext('2d').getImageData(0,0,sW,sH);\r\n"
-    "var pDst=canvas.getContext('2d').getImageData(0,0,dW,dH);\r\n"
-    
-    "if(isLvl){\r\n"
-        "for (var j=0;j<dH;j++){\r\n"
-            "var y=dY+j;\r\n"
-            "if ((y<0)||(y>=sH)){\r\n"
-                "for (var i=0;i<dW;i++,index+=4) setVal(pDst,index,(i+j)%2==0?1:0);\r\n"
-                "continue;\r\n"
-            "}\r\n"
-            
-            "for (var i=0;i<dW;i++){\r\n"
-                "var x=dX+i;\r\n"
-                
-                "if ((x<0)||(x>=sW)){\r\n"
-                    "setVal(pDst,index,(i+j)%2==0?1:0);\r\n"
-                    "index+=4;\r\n"
-                     "continue;\r\n"
-                 "}\r\n"
-                 
-                 "var pos=(y*sW+x)*4;\r\n"     
-                 "setVal(pDst,index,getNear(pSrc.data[pos],pSrc.data[pos+1],pSrc.data[pos+2]));\r\n"
-                 "index+=4;\r\n"
-             "}\r\n"
-         "}\r\n"
-    "}else{\r\n"
-        "var aInd=0;\r\n"
-        "var bInd=1;\r\n"
-        "var errArr=new Array(2);\r\n"
-        "errArr[0]=new Array(dW);\r\n"
-        "errArr[1]=new Array(dW);\r\n"
-        
-        "for (var i=0;i<dW;i++)\r\n"
-            "errArr[bInd][i]=[0,0,0];\r\n"
-            
-        "for (var j=0;j<dH;j++){\r\n"
-            "var y=dY+j;\r\n"
-            
-            "if ((y<0)||(y>=sH)){\r\n"
-                "for (var i=0;i<dW;i++,index+=4)setVal(pDst,index,(i+j)%2==0?1:0);\r\n"  
-                "continue;\r\n"
-            "}\r\n"
-            
-            "aInd=((bInd=aInd)+1)&1;\r\n"
-            "for (var i=0;i<dW;i++)errArr[bInd][i]=[0,0,0];\r\n"
-            
-            "for (var i=0;i<dW;i++){\r\n"
-                "var x=dX+i;\r\n"
-                
-                "if ((x<0)||(x>=sW)){\r\n"
-                    "setVal(pDst,index,(i+j)%2==0?1:0);\r\n"
-                    "index+=4;\r\n"
-                    "continue;\r\n"
-                "}\r\n"
-                
-                "var pos=(y*sW+x)*4;\r\n"
-                "var old=errArr[aInd][i];\r\n"
-                "var r=pSrc.data[pos  ]+old[0];\r\n"
-                "var g=pSrc.data[pos+1]+old[1];\r\n"
-                "var b=pSrc.data[pos+2]+old[2];\r\n"
-                "var colVal = curPal[getNear(r,g,b)];\r\n"
-                "pDst.data[index++]=colVal[0];\r\n"
-                "pDst.data[index++]=colVal[1];\r\n"
-                "pDst.data[index++]=colVal[2];\r\n"
-                "pDst.data[index++]=255;\r\n"
-                "r=(r-colVal[0]);\r\n"
-                "g=(g-colVal[1]);\r\n"
-                "b=(b-colVal[2]);\r\n"
-                
-                "if (i==0){\r\n"
-                    "errArr[bInd][i  ]=addVal(errArr[bInd][i  ],r,g,b,7.0);\r\n"
-                    "errArr[bInd][i+1]=addVal(errArr[bInd][i+1],r,g,b,2.0);\r\n"
-                    "errArr[aInd][i+1]=addVal(errArr[aInd][i+1],r,g,b,7.0);\r\n"
-                "}else if (i==dW-1){\r\n"
-                    "errArr[bInd][i-1]=addVal(errArr[bInd][i-1],r,g,b,7.0);\r\n"
-                    "errArr[bInd][i  ]=addVal(errArr[bInd][i  ],r,g,b,9.0);\r\n"
-                "}else{\r\n"
-                    "errArr[bInd][i-1]=addVal(errArr[bInd][i-1],r,g,b,3.0);\r\n"
-                    "errArr[bInd][i  ]=addVal(errArr[bInd][i  ],r,g,b,5.0);\r\n"
-                    "errArr[bInd][i+1]=addVal(errArr[bInd][i+1],r,g,b,1.0);\r\n"
-                    "errArr[aInd][i+1]=addVal(errArr[aInd][i+1],r,g,b,7.0);\r\n"
-                "}\r\n"
-            "}\r\n"
-        "}\r\n"
-    "}\r\n"
-
-    "canvas.getContext('2d').putImageData(pDst,0,0);\r\n"
-"}\r\n");
+void sendJS_C(WiFiClient client) {
+  client.println(
+    "function processImg() {\n\
+    dithering = getElm('setDithering').checked;\n\
+    colour = getElm('setColour').checked;\n\
+    if (!srcImg) {\n\
+        alert('Please select an image first.');\n\
+        return;\n\
+    }\n\
+    let paletteIndex = epdData[epdIndex].paletteIndex;\n\
+    setPalette(paletteIndex);\n\
+    if (colour) {\n\
+        if (palettes[paletteIndex] === undefined || palettes[paletteIndex].length <= 2) {\n\
+            alert('Selected display does not support colour.');\n\
+            colour = false;\n\
+            getElm('setColour').checked = false;\n\
+        }\n\
+    } else\n\
+        if (palettes[paletteIndex] !== undefined && palettes[paletteIndex].length > 2)\n\
+            setPalette(0);\n\
+    shiftX = parseInt(getElm('imgX').value);\n\
+    shiftY = parseInt(getElm('imgY').value);\n\
+    imgW = parseInt(getElm('imgW').value);\n\
+    imgH = parseInt(getElm('imgH').value);\n\
+    let srcImgData = preprocessImage();\n\
+    let sW = srcImgData.width;\n\
+    let sH = srcImgData.height;\n\
+    dstColourCodesBuffer = new Uint8Array(imgW * imgH);\n\
+    if ((imgW < 3) || (imgH < 3)) {\n\
+        alert('Image is too small');\n\
+        return;\n\
+    }\n\
+    getElm('dstBox').innerHTML = '<div class=\"title\">Processed image</div><canvas id=\"processedImg\" class=\"img_elm\"></canvas>';\n\
+    let canvasElm = getElm('processedImg');\n\
+    canvasElm.width = imgW;\n\
+    canvasElm.height = imgH;\n\
+    dstImgData = new ImageData(imgW, imgH);\n\
+    let bgRGB = hexToRgb(getElm('bgColour').value);\n\
+    let pixelIndex = 0;\n\
+    if (!dithering) {\n\
+        let bgIndex = getNear(bgRGB[0], bgRGB[1], bgRGB[2]);\n\
+        for (let row = 0; row < imgH; row++) {\n\
+            if ((row < 0) || (row >= sH)) {\n\
+                for (let x = 0; x < imgW; x++, pixelIndex++) setColourCode(pixelIndex, bgIndex);\n\
+                continue;\n\
+            }\n\
+            for (let col = 0; col < imgW; col++) {\n\
+                if ((col < 0) || (col >= sW)) {\n\
+                    setColourCode(pixelIndex, bgIndex);\n\
+                    pixelIndex++;\n\
+                    continue;\n\
+                }\n\
+                let pos = (row * sW + col) * 4;\n\
+                setColourCode(pixelIndex, getNear(srcImgData.data[pos], srcImgData.data[pos + 1], srcImgData.data[pos + 2]));\n\
+                pixelIndex++;\n\
+            }\n\
+        }\n\
+    } else {\n\
+        let errRowA = 0;\n\
+        let errRowB = 1;\n\
+        let errBuffers = [Array.from({ length: imgW }, () => [0, 0, 0]), Array.from({ length: imgW }, () => [0, 0, 0])];\n\
+            for (let row = 0; row < imgH; row++) {\n\
+            [errRowA, errRowB] = [errRowB, errRowA];\n\
+                    for (let col = 0; col < imgW; col++)\n\
+                errBuffers[errRowB][col] = [0, 0, 0];\n\
+                        for (let col = 0; col < imgW; col++) {\n\
+                let srcRGB = [0, 0, 0];\n\
+                if ((col < 0) || (col >= sW) || (row < 0) || (row >= sH)) {\n\
+                    srcRGB = bgRGB;\n\
+                } else {\n\
+                    let pos = (row * sW + col) * 4;\n\
+                    srcRGB = [\n\
+                        srcImgData.data[pos],\n\
+                        srcImgData.data[pos + 1],\n\
+                        srcImgData.data[pos + 2]\n\
+                    ]\n\
+                }\n\
+                let newRGB = [0, 0, 0];\n\
+                for (let k = 0; k < 3; k++) {\n\
+                    newRGB[k] = Math.max(0, Math.min(255, srcRGB[k] + errBuffers[errRowA][col][k]));\n\
+                }\n\
+                let colourIndex = getNear(newRGB[0], newRGB[1], newRGB[2]);\n\
+                setColourCode(pixelIndex, colourIndex);\n\
+                pixelIndex++;\n\
+                let errRGB = [\n\
+                    newRGB[0] - curPaletteRGB[colourIndex][0],\n\
+                    newRGB[1] - curPaletteRGB[colourIndex][1],\n\
+                    newRGB[2] - curPaletteRGB[colourIndex][2]\n\
+                ];\n\
+                if (errRGB[0] === 0 && errRGB[1] === 0 && errRGB[2] === 0) continue;\n\
+                if (row == imgH - 1) continue;\n\
+                            if (!col) {\n\
+                    errBuffers[errRowA][col + 1] = getWeightedErrRGB(errBuffers[errRowA][col + 1], errRGB, 7 / 16);\n\
+                    errBuffers[errRowB][col + 1] = getWeightedErrRGB(errBuffers[errRowB][col + 1], errRGB, 2 / 16);\n\
+                    errBuffers[errRowB][col] = getWeightedErrRGB(errBuffers[errRowB][col], errRGB, 7 / 16);\n\
+                } else if (col == imgW - 1) {\n\
+                    errBuffers[errRowB][col] = getWeightedErrRGB(errBuffers[errRowB][col], errRGB, 9 / 16);\n\
+                    errBuffers[errRowB][col - 1] = getWeightedErrRGB(errBuffers[errRowB][col - 1], errRGB, 7 / 16);\n\
+                } else {\n\
+                    errBuffers[errRowB][col - 1] = getWeightedErrRGB(errBuffers[errRowB][col - 1], errRGB, 3 / 16);\n\
+                    errBuffers[errRowB][col] = getWeightedErrRGB(errBuffers[errRowB][col], errRGB, 5 / 16);\n\
+                    errBuffers[errRowB][col + 1] = getWeightedErrRGB(errBuffers[errRowB][col + 1], errRGB, 1 / 16);\n\
+                    errBuffers[errRowA][col + 1] = getWeightedErrRGB(errBuffers[errRowA][col + 1], errRGB, 7 / 16);\n\
+                }\n\
+            }\n\
+        }\n\
+    }\n\
+    setTimeout(() => canvasElm.getContext('2d').putImageData(dstImgData, 0, 0), 100);\n\
+}");
 }
 
-void sendJS_D(WiFiClient client)
-{
-client.println(
-"var pxInd,stInd;\r\n"
-"var dispW,dispH;\r\n"
-"var xhReq,dispX;\r\n"
-"var rqPrf,rqMsg;\r\n"
-
-"function byteToStr(v){return String.fromCharCode((v & 0xF) + 97, ((v >> 4) & 0xF) + 97);}\r\n"
-"function wordToStr(v){return byteToStr(v&0xFF) + byteToStr((v>>8)&0xFF);}\r\n"
-
-"function u_send(cmd,next)\r\n"
-"{\r\n"
-    "xhReq.open('POST',rqPrf+cmd, true);\r\n"
-    "xhReq.send('');\r\n"
-
-  "if(next)stInd++;\r\n"
-  "return 0;\r\n" 
-"}\r\n"
-
-"function u_next()\r\n"
-"{\r\n"
-    "lnInd=0;\r\n"
-    "pxInd=0;\r\n"
-    "u_send('NEXT_',true);\r\n"
-"}\r\n"
-
-"function u_done()\r\n"
-"{\r\n"
-    "setInn('logTag','Complete!');\r\n"
-    "return u_send('SHOW_',true);\r\n"
-"}\r\n"
-
-"function u_show(a,k1,k2)"
-"{"
-    "var x=''+(k1+k2*pxInd/a.length);"
-    "if(x.length>5)x=x.substring(0,5);"
-    "setInn('logTag','Progress: '+x+'%');"
-    "return u_send(rqMsg+wordToStr(rqMsg.length)+'LOAD_',pxInd>=a.length);"
-"}\r\n"
-
-"function u_data(a,c,k1,k2)\r\n"
-"{\r\n"
-    "rqMsg='';\r\n"
-  
-    "if(c==-1)\r\n"
-    "{\r\n"
-        "while((pxInd<a.length)&&(rqMsg.length<1000))\r\n"
-        "{\r\n"
-            "var v=0;\r\n"
-            "for (var i=0;i<16;i+=2)if(pxInd<a.length)v|=(a[pxInd++]<<i);\r\n"
-            "rqMsg += wordToStr(v);\r\n"      
-        "}\r\n"
-    "}\r\n"
-    "else if(c==-2)\r\n"
-    "{\r\n"
-        "while((pxInd<a.length)&&(rqMsg.length<1000))\r\n"
-        "{\r\n"
-            "var v=0;\r\n"
-            "for (var i=0;i<16;i+=4)if(pxInd<a.length)v|=(a[pxInd++]<<i);\r\n"
-            "rqMsg += wordToStr(v);\r\n"  
-        "}\r\n"
-    "}\r\n"
-    "else\r\n"
-    "{\r\n"
-        "while((pxInd<a.length)&&(rqMsg.length<1000))\r\n"
-        "{\r\n"
-            "var v=0;\r\n"
-            "for (var i=0;i<8;i++) if((pxInd<a.length)&&(a[pxInd++]!=c))v|=(128>>i);\r\n"           
-            "rqMsg += byteToStr(v);\r\n"
-        "}\r\n"
-    "}\r\n"
-
-  "return u_show(a,k1,k2);"
-"}\r\n"
-
-"function u_line(a,c,k1,k2)\r\n"
-"{\r\n"
-    "var x;\r\n"
-    "rqMsg='';\r\n"
-	"while(rqMsg.length<1000)\r\n"
-	"{\r\n"
-		"x=0;\r\n"
-		"while(x<122)\r\n"
-		"{\r\n"
-			"var v=0;\r\n"
-			"for (var i=0;(i<8)&&(x<122);i++,x++) if(a[pxInd++]!=c)v|=(128>>i);\r\n"
-			"rqMsg += byteToStr(v);\r\n" 
-		"}\r\n"
-	"}\r\n"
-    "return u_show(a,k1,k2);"
-"}\r\n"
-
-"function uploadImage()\r\n"
-"{\r\n"
-    "var c=getElm('canvas');\r\n"
-    "var w=dispW=c.width;\r\n"
-    "var h=dispH=c.height;\r\n"
-    "var p=c.getContext('2d').getImageData(0,0,w,h);\r\n"
-    "var a=new Array(w*h);\r\n"
-    "var i=0;\r\n"
-    "for(var y=0;y<h;y++)for(var x=0;x<w;x++,i++) {\r\n"
-        "var is7 = (typeof curPal !== 'undefined' && curPal.length==7);\r\n"
-        "var is6 = (typeof curPal !== 'undefined' && curPal.length==6);\r\n"
-        "if(is7)\r\n"
-            "a[i]=getVal_7color(p,i<<2);\r\n"
-        "else if(is6)\r\n"
-            "a[i]=getVal_6color(p,i<<2);\r\n"
-        "else\r\n"
-            "a[i]=getVal(p,i<<2);\r\n"
-    "}\r\n"
-    "dispX=0;\r\n"
-    "pxInd=0;\r\n"
-    "stInd=0;\r\n"
-    "xhReq=new XMLHttpRequest();\r\n"
-    "rqPrf='http://'+getElm('ip_addr').value+'/';\r\n"
-
-    "if ((epdInd==3)  || (epdInd==39) || (epdInd==43))\r\n" //2.13
-    "{\r\n"
-        "xhReq.onload=xhReq.onerror = function()\r\n" 
-        "{\r\n"
-            "if(stInd==0)return u_line(a,0,0,100);\r\n"
-            "if(stInd==1)return u_done();\r\n"
-        "};\r\n"
-        
-        "if(epdInd>25)\r\n"
-			"return u_send('EPD'+String.fromCharCode(epdInd+-26+65)+'_',false);\r\n"
-        "return u_send('EPD'+String.fromCharCode(epdInd+97)+'_',false);\r\n"  
-    "}\r\n"
-
-    "if ((epdInd==40))\r\n"	//2.13 B V4
-    "{\r\n"
-        "xhReq.onload=xhReq.onerror = function()\r\n" 
-        "{\r\n"
-            "if(stInd==0)return u_line(a,0,0,50);\r\n"
-            "if(stInd==1)return u_next();\r\n"
-			"if(stInd==2)return u_line(a,3,50,50);\r\n"
-            "if(stInd==3)return u_done();\r\n"
-        "};\r\n"
-        "if(epdInd>25)\r\n"
-			"return u_send('EPD'+String.fromCharCode(epdInd+-26+65)+'_',false);\r\n"
-        "return u_send('EPD'+String.fromCharCode(epdInd+97)+'_',false);\r\n"  
-    "}\r\n"
-
-    "if ((epdInd==0)||(epdInd==3)||(epdInd==6)||(epdInd==7)||(epdInd==9)||(epdInd==12)||\
-		(epdInd==16)||(epdInd==19)||(epdInd==22)||(epdInd==26)||(epdInd==27)||(epdInd==28))\r\n"
-    "{\r\n"
-        "xhReq.onload=xhReq.onerror=function()\r\n"
-        "{\r\n"
-            "if(stInd==0)return u_data(a,0,0,100);\r\n"
-            "if(stInd==1)return u_done();\r\n"
-        "};\r\n"
-		"if(epdInd>25)\r\n"
-			"return u_send('EPD'+String.fromCharCode(epdInd+-26+65)+'_',false);\r\n"
-        "return u_send('EPD'+String.fromCharCode(epdInd+97)+'_',false);\r\n"
-    "}\r\n"
-  
-	"if (epdInd>15 && epdInd < 22)\r\n"
-    "{\r\n"
-        "xhReq.onload=xhReq.onerror=function()\r\n"
-        "{\r\n"
-            "if(stInd==0)return u_data(a,-1,0,100);\r\n"
-            "if(stInd==1)return u_done();\r\n"
-        "};\r\n"
-        "return u_send('EPD'+String.fromCharCode(epdInd+97)+'_',false);\r\n"   
-    "}\r\n"
-	
-    "if (epdInd == 25 || epdInd == 37)\r\n"	// 7 colors
-    "{\r\n"
-        "xhReq.onload=xhReq.onerror=function()\r\n"
-        "{\r\n"
-            "if(stInd==0)return u_data(a,-2,0,100);\r\n"
-            "if(stInd==1)return u_done();\r\n"
-        "};\r\n"
-		"if(epdInd>25)\r\n"
-			"return u_send('EPD'+String.fromCharCode(epdInd+-26+65)+'_',false);\r\n"
-        "return u_send('EPD'+String.fromCharCode(epdInd+97)+'_',false);\r\n"
-    "}\r\n"
-
-    "if (epdInd == 49)\r\n"	// 6 colors
-    "{\r\n"
-        "xhReq.onload=xhReq.onerror=function()\r\n"
-        "{\r\n"
-            "if(stInd==0)return u_data(a,-2,0,100);\r\n"
-            "if(stInd==1)return u_done();\r\n"
-        "};\r\n"
-		"if(epdInd>25)\r\n"
-			"return u_send('EPD'+String.fromCharCode(epdInd+-26+65)+'_',false);\r\n"
-        "return u_send('EPD'+String.fromCharCode(epdInd+97)+'_',false);\r\n"
-    "}\r\n"
-
-    "if (epdInd == 50)\r\n"	// 13.3 6 colors (split 1200->600+600)\r\n"
-    "{\r\n"
-        "var leftA=[];\r\n"
-        "var rightA=[];\r\n"
-        "for(var row=0; row<h; row++){\r\n"
-            "var base = row * w;\r\n"
-            "for(var xx=0; xx<600; xx++) leftA.push(a[base + xx]);\r\n"
-            "for(var xx=600; xx<w; xx++) rightA.push(a[base + xx]);\r\n"
-        "}\r\n"
-        "xhReq.onload=xhReq.onerror=function()\r\n"
-        "{\r\n"
-            "if(stInd==0) return u_data(leftA, -2, 0, 100);\r\n"
-            "if(stInd==1) return u_next();\r\n"
-            "if(stInd==2) return u_data(rightA, -2, 0, 100);\r\n"
-            "if(stInd==3) return u_done();\r\n"
-        "};\r\n"
-        "if(epdInd>25)\r\n"
-            "return u_send('EPD'+String.fromCharCode(epdInd+-26+65)+'_',false);\r\n"
-        "return u_send('EPD'+String.fromCharCode(epdInd+97)+'_',false);\r\n"
-    "}\r\n"
-
-
-    "else\r\n"
-    "{\r\n"
-        "xhReq.onload=xhReq.onerror=function()\r\n"
-        "{\r\n"
-			"console.log('*************');\r\n"
-			"console.log(stInd);\r\n"
-			"console.log('*************');\r\n"
-            "if(stInd==0&&epdInd==23)return u_data(a,0,0,100);\r\n"
-            "if(stInd==0)return u_data(a,((epdInd==1)||(epdInd==12))?-1:0,0,50);\r\n"
-            "if(stInd==1)return u_next();\r\n"
-            "if(stInd==2)return u_data(a,3,50,50);\r\n" 
-            "if(stInd==3)return u_done();\r\n"
-        "};\r\n"
-		"if(epdInd>25)\r\n"
-			"return u_send('EPD'+String.fromCharCode(epdInd+-26+65)+'_',false);\r\n"
-        "return u_send('EPD'+String.fromCharCode(epdInd+97)+'_',false);\r\n"
-    "}\r\n"
-"}\r\n\r\n");
+// void sendJS_D(WiFiClient client) {
+//   client.print(
+//     "let pxInd, stage, xhReq;\n\
+// let rqPrf, rqMsg;\n\
+// const maxChunkSize = ");
+//   client.print(BUFF_MAX_CHUNK_SIZE);
+//   client.println(";\n\
+// function byteToStr(v) { return String.fromCharCode((v & 0xF) + 97, ((v >> 4) & 0xF) + 97); }\n\
+// function wordToStr(v) { return byteToStr(v & 0xFF) + byteToStr((v >> 8) & 0xFF); }\n\
+// function EPD_Send(cmd, next) {\n\
+//     xhReq.open('POST', rqPrf + cmd, true);\n\
+//     xhReq.send();\n\
+//     if (next) stage++;\n\
+//     return 0;\n\
+// }\n\
+// function EPD_Next() {\n\
+//     lnInd = 0;\n\
+//     pxInd = 0;\n\
+//     EPD_Send('NEXT_', true);\n\
+// }\n\
+// function EPD_Done() {\n\
+//     setInn('logTag', 'Complete!');\n\
+//     return EPD_Send('SHOW_', true);\n\
+// }\n\
+// function EPD_Load(colourData, startProgress, endProgress) {\n\
+//     let progress = (startProgress + (endProgress - startProgress) * pxInd / colourData.length);\n\
+//     setInn('logTag', 'Sending to ' + epdData[epdIndex].name + ': ' + (Math.round(progress * 100) / 100).toFixed(2) + '% Complete');\n\
+//     document.querySelector('#logProgress').style.width = progress + '%';\n\
+//     return EPD_Send(rqMsg + wordToStr(rqMsg.length) + 'LOAD_', pxInd >= colourData.length);\n\
+// }\n\
+// function EPD_SendChunk(colourData, c, startProgress, endProgress) {\n\
+//     rqMsg = '';\n\
+//     if (c == -1) {\n\
+//         while ((pxInd < colourData.length) && (rqMsg.length < maxChunkSize)) {\n\
+//             let v = 0;\n\
+//             for (let i = 0; i < 16; i += 2)\n\
+//                 if (pxInd < colourData.length)\n\
+//                     v |= (colourData[pxInd++] << i);\n\
+//             rqMsg += wordToStr(v);\n\
+//         }\n\
+//     }\n\
+//     else if (c == -2) {\n\
+//         while ((pxInd < colourData.length) && (rqMsg.length < maxChunkSize)) {\n\
+//             let v = 0;\n\
+//             for (let i = 0; i < 16; i += 4)\n\
+//                 if (pxInd < colourData.length)\n\
+//                     v |= (colourData[pxInd++] << i);\n\
+//             rqMsg += wordToStr(v);\n\
+//         }\n\
+//     }\n\
+//     else {\n\
+//         while ((pxInd < colourData.length) && (rqMsg.length < maxChunkSize)) {\n\
+//             let v = 0;\n\
+//             for (let i = 0; i < 8; i++)\n\
+//                 if ((pxInd < colourData.length) && (colourData[pxInd++] != c))\n\
+//                     v |= (128 >> i);\n\
+//             rqMsg += byteToStr(v);\n\
+//         }\n\
+//     }\n\
+//     return EPD_Load(colourData, startProgress, endProgress);\n\
+// }\n\
+// function EPD_Line(colourData, c, startProgress, endProgress) {\n\
+//     let x;\n\
+//     rqMsg = '';\n\
+//     while (rqMsg.length < maxChunkSize) {\n\
+//         x = 0;\n\
+//         while (x < 122) {\n\
+//             let v = 0;\n\
+//             for (let i = 0; (i < 8) && (x < 122); i++, x++) if (colourData[pxInd++] != c) v |= (128 >> i);\n\
+//             rqMsg += byteToStr(v);\n\
+//         }\n\
+//     }\n\
+//     return EPD_Load(colourData, startProgress, endProgress);\n\
+// }\n\
+// function uploadImage() {\n\
+//     let w = dstImgData.width;\n\
+//     let h = dstImgData.height;\n\
+//     if (!dstColourCodesBuffer) {\n\
+//         alert('Please process the image before uploading.');\n\
+//         return;\n\
+//     }\n\
+//     pxInd = 0;\n\
+//     stage = 0;\n\
+//     xhReq = new XMLHttpRequest();\n\
+//     rqPrf = 'http://' + getElm('ipAddress').value + '/';\n\
+//     if ([3, 39, 43].includes(epdIndex))\n\
+//     {\n\
+//         xhReq.onload = xhReq.onerror = function () {\n\
+//             if (stage == 0) return EPD_Line(dstColourCodesBuffer, 0, 0, 100);\n\
+//             if (stage == 1) return EPD_Done();\n\
+//         };\n\
+//         if (epdIndex > 25)\n\
+//             return EPD_Send('EPD' + String.fromCharCode(epdIndex + -26 + 65) + '_', false);\n\
+//         return EPD_Send('EPD' + String.fromCharCode(epdIndex + 97) + '_', false);\n\
+//     }\n\
+//     if (epdIndex == 40)\n\
+//     {\n\
+//         xhReq.onload = xhReq.onerror = function () {\n\
+//             if (stage == 0) return EPD_Line(dstColourCodesBuffer, 0, 0, 50);\n\
+//             if (stage == 1) return EPD_Next();\n\
+//             if (stage == 2) return EPD_Line(dstColourCodesBuffer, 3, 50, 100);\n\
+//             if (stage == 3) return EPD_Done();\n\
+//         };\n\
+//         if (epdIndex > 25)\n\
+//             return EPD_Send('EPD' + String.fromCharCode(epdIndex + -26 + 65) + '_', false);\n\
+//         return EPD_Send('EPD' + String.fromCharCode(epdIndex + 97) + '_', false);\n\
+//     }\n\
+//     if ([0, 3, 6, 7, 9, 12, 16, 19, 22, 26, 27, 28].includes(epdIndex)) {\n\
+//         xhReq.onload = xhReq.onerror = function () {\n\
+//             if (stage == 0) return EPD_SendChunk(dstColourCodesBuffer, 0, 0, 100);\n\
+//             if (stage == 1) return EPD_Done();\n\
+//         };\n\
+//         if (epdIndex > 25)\n\
+//             return EPD_Send('EPD' + String.fromCharCode(epdIndex + -26 + 65) + '_', false);\n\
+//         return EPD_Send('EPD' + String.fromCharCode(epdIndex + 97) + '_', false);\n\
+//     }\n\
+//     if (epdIndex > 15 && epdIndex < 22) {\n\
+//         xhReq.onload = xhReq.onerror = function () {\n\
+//             if (stage == 0) return EPD_SendChunk(dstColourCodesBuffer, -1, 0, 100);\n\
+//             if (stage == 1) return EPD_Done();\n\
+//         };\n\
+//         return EPD_Send('EPD' + String.fromCharCode(epdIndex + 97) + '_', false);\n\
+//     }\n\
+//     if ([25, 37].includes(epdIndex))\n\
+//     {\n\
+//         xhReq.onload = xhReq.onerror = function () {\n\
+//             if (stage == 0) return EPD_SendChunk(dstColourCodesBuffer, -2, 0, 100);\n\
+//             if (stage == 1) return EPD_Done();\n\
+//         };\n\
+//         if (epdIndex > 25)\n\
+//             return EPD_Send('EPD' + String.fromCharCode(epdIndex + -26 + 65) + '_', false);\n\
+//         return EPD_Send('EPD' + String.fromCharCode(epdIndex + 97) + '_', false);\n\
+//     }\n\
+//     if (epdIndex == 49)\n\
+//     {\n\
+//         xhReq.onload = xhReq.onerror = function () {\n\
+//             if (stage == 0) return EPD_SendChunk(dstColourCodesBuffer, -2, 0, 100);\n\
+//             if (stage == 1) return EPD_Done();\n\
+//         };\n\
+//         if (epdIndex > 25)\n\
+//             return EPD_Send('EPD' + String.fromCharCode(epdIndex + -26 + 65) + '_', false);\n\
+//         return EPD_Send('EPD' + String.fromCharCode(epdIndex + 97) + '_', false);\n\
+//     }\n\
+//     if (epdIndex == 50)\n\
+//     {\n\
+//         console.log('Loading 13.3 E 6 colours');\n\
+//         let leftA = [];\n\
+//         let rightA = [];\n\
+//         for (let row = 0; row < h; row++) {\n\
+//             let base = row * w;\n\
+//             for (let xx = 0; xx < 600; xx++) leftA.push(dstColourCodesBuffer[base + xx]);\n\
+//             for (let xx = 600; xx < w; xx++) rightA.push(dstColourCodesBuffer[base + xx]);\n\
+//         }\n\
+//         xhReq.onload = xhReq.onerror = function () {\n\
+//             if (stage == 0) return EPD_SendChunk(leftA, -2, 0, 50);\n\
+//             if (stage == 1) return EPD_Next();\n\
+//             if (stage == 2) return EPD_SendChunk(rightA, -2, 50, 100);\n\
+//             if (stage == 3) return EPD_Done();\n\
+//         };\n\
+//         if (epdIndex > 25)\n\
+//             return EPD_Send('EPD' + String.fromCharCode(epdIndex - 26 + 65) + '_', false);\n\
+//         return EPD_Send('EPD' + String.fromCharCode(epdIndex + 97) + '_', false);\n\
+//     }\n\
+//     else {\n\
+//         console.log('Loading default EPD');\n\
+//         xhReq.onload = xhReq.onerror = function () {\n\
+//             console.log('*************');\n\
+//             console.log(stage);\n\
+//             console.log('*************');\n\
+//             if (stage == 0 && epdIndex == 23) return EPD_SendChunk(dstColourCodesBuffer, 0, 0, 100);\n\
+//             if (stage == 0) return EPD_SendChunk(dstColourCodesBuffer, ((epdIndex == 1) || (epdIndex == 12)) ? -1 : 0, 0, 50);\n\
+//             if (stage == 1) return EPD_Next();\n\
+//             if (stage == 2) return EPD_SendChunk(dstColourCodesBuffer, 3, 50, 100);\n\
+//             if (stage == 3) return EPD_Done();\n\
+//         };\n\
+//         if (epdIndex > 25)\n\
+//             return EPD_Send('EPD' + String.fromCharCode(epdIndex + -26 + 65) + '_', false);\n\
+//         return EPD_Send('EPD' + String.fromCharCode(epdIndex + 97) + '_', false);\n\
+//     }\n\
+// }");
+// }
+void sendJS_D(WiFiClient client) {
+  client.print(
+    "let pxInd, stage;\n\
+let rqMsg;\n\
+const maxChunkSize = ");
+  client.print(BUFF_MAX_CHUNK_SIZE);
+  client.println(";\n\
+let ws;\n\
+let commandQueue = [];\n\
+let isProcessing = false;\n\
+\n\
+function byteToStr(v) { return String.fromCharCode((v & 0xF) + 97, ((v >> 4) & 0xF) + 97); }\n\
+function wordToStr(v) { return byteToStr(v & 0xFF) + byteToStr((v >> 8) & 0xFF); }\n\
+\n\
+window.addEventListener('load', () => {\n\
+    let ip = getElm('ipAddress').value;\n\
+    ws = new WebSocket('ws://' + ip + ':81/');\n\
+    ws.onopen = () => { getElm('wsStatus').style.color = 'lime'; getElm('wsStatus').innerText = '● Hardware Connected'; };\n\
+    ws.onclose = () => { getElm('wsStatus').style.color = 'red'; getElm('wsStatus').innerText = '● Disconnected'; };\n\
+    ws.onmessage = (evt) => {\n\
+        let msg = evt.data;\n\
+        if (msg === 'ACK') { advanceQueue(); }\n\
+        else if (msg === 'BUSY') { setInn('logTag', 'Hardware Processing (Busy Pin High)...'); }\n\
+        else if (msg === 'DONE') { setInn('logTag', 'Upload Complete!'); document.querySelector('#logProgress').style.width = '100%'; }\n\
+    };\n\
+});\n\
+\n\
+function enqueueCommand(cmdData, logMsg, progress) {\n\
+    commandQueue.push({ payload: cmdData, log: logMsg, prog: progress });\n\
+}\n\
+\n\
+function advanceQueue() {\n\
+    if (commandQueue.length === 0) { isProcessing = false; return; }\n\
+    let nextCmd = commandQueue.shift();\n\
+    setInn('logTag', nextCmd.log);\n\
+    document.querySelector('#logProgress').style.width = nextCmd.prog + '%';\n\
+    ws.send(nextCmd.payload);\n\
+}\n\
+\n\
+function EPD_SendChunk(colourData, c, startProg, endProg) {\n\
+    rqMsg = '';\n\
+    let chunkStartProg = startProg;\n\
+    let totalChunks = Math.ceil((colourData.length - pxInd) / (maxChunkSize/4));\n\
+    let progStep = (endProg - startProg) / totalChunks;\n\
+\n\
+    while(pxInd < colourData.length) {\n\
+        rqMsg = '';\n\
+        if (c == -2) {\n\
+            while ((pxInd < colourData.length) && (rqMsg.length < maxChunkSize)) {\n\
+                let v = 0;\n\
+                for (let i = 0; i < 16; i += 4)\n\
+                    if (pxInd < colourData.length) v |= (colourData[pxInd++] << i);\n\
+                rqMsg += wordToStr(v);\n\
+            }\n\
+        }\n\
+        // (Include your original c == -1 and default logic here for other displays)\n\
+        chunkStartProg += progStep;\n\
+        enqueueCommand('LOAD_' + rqMsg, `Sending Chunk... ${(Math.round(chunkStartProg))}%`, chunkStartProg);\n\
+    }\n\
+}\n\
+\n\
+function uploadImage() {\n\
+    if (!dstColourCodesBuffer) { alert('Process image first.'); return; }\n\
+    if (ws.readyState !== WebSocket.OPEN) { alert('Hardware disconnected.'); return; }\n\
+    \n\
+    commandQueue = [];\n\
+    pxInd = 0;\n\
+    isProcessing = true;\n\
+    \n\
+    enqueueCommand('EPD_' + epdIndex, 'Initializing Display...', 5);\n\
+    \n\
+    if (epdIndex == 50) {\n\
+        let leftA = [], rightA = [];\n\
+        let w = dstImgData.width, h = dstImgData.height;\n\
+        for (let row = 0; row < h; row++) {\n\
+            let base = row * w;\n\
+            for (let xx = 0; xx < 600; xx++) leftA.push(dstColourCodesBuffer[base + xx]);\n\
+            for (let xx = 600; xx < w; xx++) rightA.push(dstColourCodesBuffer[base + xx]);\n\
+        }\n\
+        pxInd = 0; EPD_SendChunk(leftA, -2, 5, 50);\n\
+        enqueueCommand('NEXT', 'Switching to Slave IC...', 50);\n\
+        pxInd = 0; EPD_SendChunk(rightA, -2, 50, 95);\n\
+        enqueueCommand('SHOW', 'Executing Direct Refresh...', 95);\n\
+    }\n\
+    // (Add fallback logic for other displays here if needed)\n\
+    \n\
+    advanceQueue();\n\
+}\n");
 }

@@ -84,31 +84,18 @@ static const UBYTE EPD_3IN52_lut_R24_GC[] =
 
 UBYTE EPD_3IN52_Flag;
 
-/******************************************************************************
-function :	Read Busy
-parameter:
-******************************************************************************/
-void EPD_3IN52_ReadBusy(void)
-{
-    Serial.print("e-Paper busy\r\n");
-    UBYTE busy;
-    do {
-        busy = digitalRead(PIN_SPI_BUSY);
-    } while(!busy);
-    delay(200);
-    Serial.print("e-Paper busy release\r\n");
-}
-
 /**
  * @brief 
  * 
  */
-void EPD_3IN52_refresh(void)
+bool EPD_3IN52_refresh(void)
 {
     EPD_SendCommand(0x17);
     EPD_SendData(0xA5);
-    EPD_3IN52_ReadBusy();
+    if (!EPD_WaitUntilIdle(200)) return false;
     delay(200);
+
+    return true;
 }
 
 // LUT download
@@ -235,12 +222,14 @@ int EPD_3IN52_Init(void)
     return 0;
 }
 
-void EPD_3IN52_Show(void)
+bool EPD_3IN52_Show(void)
 {
     EPD_3IN52_lut_GC();
-    EPD_3IN52_refresh();
+    bool success = EPD_3IN52_refresh();
     delay(2);
     Serial.print("EPD_3IN52_Show END\r\n");
     EPD_SendCommand(0X07);  	//deep sleep
     EPD_SendData(0xA5);
+
+    return success;
 }

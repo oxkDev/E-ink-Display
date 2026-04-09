@@ -122,16 +122,18 @@ int EPD_2IN7_V2_Init(void)
 	return 0;
 }
 
-void EPD_2IN7_V2_Show(void)
+bool EPD_2IN7_V2_Show(void)
 {
     EPD_SendCommand(0x22);  //Display Update Control
     EPD_SendData(0XF7);
     EPD_SendCommand(0x20);  //Activate Display Update Sequence
-    EPD_WaitUntilIdle_high();
+    bool success = EPD_WaitUntilIdle_high(200);
     delay(2);
     Serial.print("EPD_2IN7_V2_Show END\r\n");
     EPD_SendCommand(0X07);  	//deep sleep
     EPD_SendData(0xA5);
+
+    return success;
 }
 
 
@@ -233,13 +235,15 @@ int EPD_Init_2in7b_V2(void)
 	return 0;
 }
 
-void EPD_Show_2in7b_V2(void)
+bool EPD_Show_2in7b_V2(void)
 {
 	EPD_SendCommand(0x20);
-	EPD_WaitUntilIdle_high();
+	bool success = EPD_WaitUntilIdle_high(200);
 	
 	delay(200);
 	EPD_Send_1(0x10, 0x01);
+
+    return success;
 }
 
 

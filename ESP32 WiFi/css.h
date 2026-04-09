@@ -9,137 +9,244 @@
   ******************************************************************************
   */
 
-void sendCSS(WiFiClient client)
-{
-client.println(
-".menu_button {\r\n"
-"width: 100%;\r\n"
-"height: 50px;\r\n"
-"border-radius: 4px;\r\n"
-"text-align: center;\r\n"
-"cursor: pointer;\r\n"
-"display: block;\r\n"
-"margin-bottom:5px;\r\n"
-"font: 14px/50px Tahoma;\r\n"
-"transition: all 0.18s ease-in-out;\r\n"
-"border: 1px solid #4FD666;\r\n"
-"background: linear-gradient(to top right, #3EC97A, #69EA49 20%, rgba(255, 255, 255, 0) 80%, rgba(255, 255, 255, 0)) top right/500% 500%;\r\n"
-"color: green;\r\n"
-"}\r\n"
-
-".menu_button:hover {\r\n"
-"color: white;\r\n"
-"background-position: bottom left;\r\n"
-"}\r\n"
-
-".hidden_input {\r\n"
-"width: 0.1px;\r\n"
-"height: 0.1px;\r\n"
-"opacity: 0;\r\n"
-"overflow: hidden;\r\n"
-"position: absolute;\r\n"
-"z-index: -1;\r\n"
-"}\r\n"
-
-".imgBox\r\n"
-"{\r\n"
-"border: 2px dashed green;\r\n"
-"border-radius: 8px;\r\n"
-"background: lightyellow;\r\n"
-"background-repeat: no-repeat;\r\n"
-"text-align: center;\r\n"
-"margin-top:10px;\r\n"
-"}\r\n"
-
-".mesBox {\r\n"
-"margin: 100px 70px;\r\n"
-"color: green;\r\n"
-"font-size: 25px;\r\n"
-"font-family: Verdana, Arial, sans-serif;\r\n"
-"}\r\n"
-
-".header_back\r\n"
-"{\r\n"
-"width:100%;\r\n"
-"height:100px;\r\n"
-"background:#EEEEEE;\r\n"
-"}\r\n"
-
-".content_back\r\n"
-"{\r\n"
-"width:100%;\r\n"
-"background:#EEEEEE;\r\n"
-"}\r\n"
-
-".footer_back\r\n"
-"{\r\n"
-"width:100%;\r\n"
-"height:100px;\r\n"
-"background:#EEEEEE;\r\n"
-"}\r\n"
-
-".header_face\r\n"
-"{\r\n"
-"width:1024px;\r\n"
-"height:100px;\r\n"
-"margin:0 auto;\r\n"
-"background:#CCFFCC;\r\n"
-"}\r\n"
-
-".content_face\r\n"
-"{\r\n"
-"width:1024px;\r\n"
-"height:100%;\r\n"
-"margin:0 auto;\r\n"
-"background:#FFFFFF;\r\n"
-"}\r\n"
-
-".footer_face\r\n"
-"{\r\n"
-"width:1024px;\r\n"
-"height:100%;\r\n"
-"margin:0 auto;\r\n"
-"background:#CCFFCC;\r\n"
-"}\r\n"
-
-".menu_bar\r\n"
-"{\r\n"
-"border-right:1px solid #4FD666;\r\n"
-"background:#EEFFEE;\r\n"
-"vertical-align:top;\r\n"
-"padding:15px;\r\n"
-"width:200px;\r\n"
-"height:100%\r\n"
-"}\r\n"
-
-".content_body\r\n"
-"{\r\n"
-"vertical-align:top;\r\n"
-"text-align:center;\r\n"
-"height:100%;\r\n"
-"padding:30px;\r\n"
-"padding-left:15px;\r\n"
-"}\r\n"
-
-".title\r\n"
-"{\r\n"
-"color:green;\r\n"
-"font-size:32px;\r\n"
-"font-family: arial;\r\n"
-"}\r\n"
-
-".comment\r\n"
-"{\r\n"
-"width:100%;\r\n"
-"color:green;\r\n"
-"font-size:16px;\r\n"
-"font-style:italic;\r\n"
-"font-family: arial;\r\n"
-"text-align:center;\r\n"
-"}\r\n"
-
-".nud\r\n"
-"{\r\n"
-"width:70px;\r\n"
-"}\r\n"); 
+void sendCSS(WiFiClient client) {
+  client.println(
+    ":root {\n\
+    --primary: #405070;\n\
+    --background: #22374b;\n\
+}\n\
+html {\n\
+    font-family: Verdana, Arial, sans-serif;\n\
+    color: #ffffff;\n\
+}\n\
+body {\n\
+    width: 75vw;\n\
+    max-width: 1000px;\n\
+    margin: auto;\n\
+    background: var(--background);\n\
+}\n\
+* {\n\
+    font: 14px/20px Tahoma;\n\
+    box-sizing: border-box;\n\
+}\n\
+.input_elm {\n\
+    width: 100%;\n\
+    padding: 10px;\n\
+    border: none;\n\
+    appearance: none;\n\
+    border-radius: 15px;\n\
+    color: #ffffff;\n\
+    background: var(--primary);\n\
+}\n\
+label {\n\
+    display: block;\n\
+}\n\
+input:active,\n\
+input:focus,\n\
+select:active,\n\
+select:focus {\n\
+    outline: none;\n\
+}\n\
+#settings {\n\
+    /* max-height: max(45vh, 400px); */\n\
+    display: flex;\n\
+    flex-wrap: wrap;\n\
+    align-content: flex-start;\n\
+    gap: 0 40px;\n\
+}\n\
+.section {\n\
+    margin: 10px auto;\n\
+}\n\
+.menu_bar {\n\
+    vertical-align: top;\n\
+    padding: 15px;\n\
+    width: 100%;\n\
+}\n\
+#logProgress {\n\
+    height: 20px;\n\
+    width: 100%;\n\
+    margin: 0;\n\
+    border-radius: 10px;\n\
+    background: var(--primary);\n\
+    transition: all ease 0.2s;\n\
+}\n\
+.menu_item {\n\
+    margin: 15px 0;\n\
+}\n\
+@media (min-width: 500px) {\n\
+    .menu_item, .menu_button{\n\
+        max-width: 250px;\n\
+    }\n\
+    .subsection {\n\
+        width: 250px !important;\n\
+    }\n\
+}\n\
+.subsection {\n\
+    width: 100%;\n\
+}\n\
+.menu_button {\n\
+    width: 100%;\n\
+    min-width: 200px;\n\
+    margin: 10px 0;\n\
+    padding: 10px;\n\
+    border-radius: 15px;\n\
+    text-align: center;\n\
+    cursor: pointer;\n\
+    display: block;\n\
+    border: 1px solid #ffffff;\n\
+    background: linear-gradient(to top right, #0d2dff, #5309ff 15%, #00000000 50%, #00000000) top right/400% 400%;\n\
+    transition: all ease 0.2s;\n\
+}\n\
+.menu_button:hover {\n\
+    /* font-weight: bold; */\n\
+    letter-spacing: 1px;\n\
+    background-position: bottom left;\n\
+}\n\
+.hidden_input {\n\
+    opacity: 0;\n\
+    width: 0;\n\
+    height: 0;\n\
+    overflow: hidden;\n\
+    position: absolute;\n\
+    z-index: -1;\n\
+}\n\
+.short_input_wrapper {\n\
+    display: flex;\n\
+    justify-content: space-between;\n\
+    align-items: center;\n\
+    gap: 20px;\n\
+}\n\
+.short_input_field {\n\
+    width: 100%;\n\
+}\n\
+.input_field .heading {\n\
+    display: block;\n\
+    text-align: left;\n\
+}\n\
+.input_label {\n\
+    /* width: 100%; */\n\
+    margin: 10px 0 5px;\n\
+    font-size: 16px;\n\
+    text-align: left;\n\
+}\n\
+.inline_input {\n\
+    display: flex;\n\
+    align-items: center;\n\
+    justify-content: space-between;\n\
+}\n\
+.colour_input {\n\
+    width: 40px;\n\
+    height: 40px;\n\
+    padding: 0;\n\
+    overflow: hidden;\n\
+    &::-webkit-color-swatch-wrapper {\n\
+        padding: 0;\n\
+    }\n\
+}\n\
+.switch_input {\n\
+    width: 80px;\n\
+    height: 40px;\n\
+    border-radius: 20px;\n\
+    padding: 0;\n\
+    display: flex;\n\
+    cursor: pointer;\n\
+    transition: all ease 0.2s;\n\
+    .knob {\n\
+        width: calc(100% - 20px);\n\
+        min-width: 30px;\n\
+        border-radius: 25px;\n\
+        background: #00000050;\n\
+        margin: 5px;\n\
+        appearance: none;\n\
+        cursor: pointer;\n\
+        transition: all ease 0.2s;\n\
+    }\n\
+    .knob:checked {\n\
+        background: #ffffff80;\n\
+    }\n\
+    &::before,\n\
+    &::after {\n\
+        width: 0px;\n\
+        content: '';\n\
+        transition: all ease 0.2s;\n\
+    }\n\
+    &:has(input:checked)::before,\n\
+    &:not(:has(input:checked))::after {\n\
+        width: 100%;\n\
+        transition-delay: 100ms;\n\
+    }\n\
+}\n\
+.dropbox {\n\
+    min-height: 150px;\n\
+    margin: 10px 0;\n\
+    border: 2px dashed #FFF;\n\
+    border-radius: 20px;\n\
+    background: var(--primary);\n\
+    box-shadow: inset 0 0 50px #00000050;\n\
+    transition: all ease 0.2s;\n\
+    display: flex;\n\
+    justify-content: center;\n\
+    flex-direction: column;\n\
+    align-items: center;\n\
+    position: relative;\n\
+    overflow: hidden;\n\
+    .heading {\n\
+        width: auto;\n\
+        margin: 0;\n\
+        padding: 60px 0;\n\
+        font-size: 20px;\n\
+        color: #FFF;\n\
+        text-align: center;\n\
+        transition: all ease 0.2s;\n\
+        cursor: pointer;\n\
+    }\n\
+    .heading[overlay] {\n\
+        position: absolute;\n\
+        top: 0;\n\
+        left: 0;\n\
+        width: 100%;\n\
+        height: 100%;\n\
+        opacity: 0;\n\
+        background: #00000090;\n\
+    }\n\
+}\n\
+.dropbox:hover {\n\
+    background: --background80;\n\
+    box-shadow: inset 0 0 100px #00000050;\n\
+    .heading {\n\
+        letter-spacing: 2px;\n\
+        width: 100%;\n\
+    }\n\
+    .heading[overlay] {\n\
+        opacity: 0.8;\n\
+    }\n\
+}\n\
+#images {\n\
+    display: flex;\n\
+    width: 100%;\n\
+    justify-content: space-between;\n\
+    gap: 20px;\n\
+}\n\
+@media (max-width: 1000px) {\n\
+    #images {\n\
+        flex-wrap: wrap;\n\
+    }\n\
+}\n\
+.img_box {\n\
+    width: 100%;\n\
+    padding: 10px;\n\
+}\n\
+.img_elm, .image_section {\n\
+    width: 100%;\n\
+}\n\
+.title {\n\
+    font: 28px/35px arial;\n\
+    margin: 20px 0 15px;\n\
+}\n\
+.heading {\n\
+    width: 100%;\n\
+    font-size: 20px;\n\
+    margin: 40px 0 10px;\n\
+    text-align: left;\n\
+}\n\n");
 }

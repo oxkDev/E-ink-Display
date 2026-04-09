@@ -23,7 +23,7 @@ void setup()
   delay(10);
 
   // Bluetooth initialization
-  Srvr__btSetup();
+  Srvr_btSetup();
 
   // SPI initialization
   EPD_initSPI();
@@ -35,5 +35,5 @@ void setup()
 /* The main loop -------------------------------------------------------------*/
 void loop()
 {
-  Srvr__loop();
+  Srvr_loop();
 }

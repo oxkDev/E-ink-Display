@@ -15,138 +15,138 @@
 /* Library includes ----------------------------------------------------------*/
 #include <BluetoothSerial.h>
 
-bool Srvr__btIsOn;// It's true when bluetooth is on
-bool Srvr__btConn;// It's true when bluetooth has connected client 
-int  Srvr__msgPos;// Position in buffer from where data is expected
-int  Srvr__length;// Length of loaded data
+bool Srvr_btIsOn;// It's true when bluetooth is on
+bool Srvr_btConn;// It's true when bluetooth has connected client 
+// int  Srvr_msgPos;// Position in buffer from where data is expected
+int  Srvr_length;// Length of loaded data
 
 /* Client ---------------------------------------------------------------------*/
-BluetoothSerial Srvr__btClient; // Bluetooth client 
+BluetoothSerial Srvr_btClient; // Bluetooth client 
 
 /* Avaialble bytes in a stream ------------------------------------------------*/
-int Srvr__available()
+int Srvr_available()
 {
-    return Srvr__btIsOn ? Srvr__btClient.available() : false;
+    return Srvr_btIsOn ? Srvr_btClient.available() : false;
 }
 
-void Srvr__write(const char*value)
+void Srvr_write(const char*value)
 {
     // Write data to bluetooth
-    if (Srvr__btIsOn) Srvr__btClient.write((const uint8_t*)value, strlen(value));
+    if (Srvr_btIsOn) Srvr_btClient.write((const uint8_t*)value, strlen(value));
 }
 
-int Srvr__read()
+int Srvr_read()
 {
-    return Srvr__btIsOn ? Srvr__btClient.read() : -1;
+    return Srvr_btIsOn ? Srvr_btClient.read() : -1;
 }
 
-void Srvr__flush()
+void Srvr_flush()
 {
     // Clear Bluetooth's stream
-    if (Srvr__btIsOn) Srvr__btClient.flush();  
+    if (Srvr_btIsOn) Srvr_btClient.flush();  
 }
 
 /* Project includes ----------------------------------------------------------*/
 #include "buff.h"       // POST request data accumulator
 #include "epd.h"        // e-Paper driver
 
-bool Srvr__btSetup()                                              
+bool Srvr_btSetup()
 {
     // Name shown in bluetooth device list of App part (PC or smartphone)
-    String devName("esp32");
+    String devName("ESP32-EPD");
 
     // Turning on
-    Srvr__btIsOn = Srvr__btClient.begin(devName);
+    Srvr_btIsOn = Srvr_btClient.begin(devName);
 
     // Show the connection result
-    if (Srvr__btIsOn) Serial.println("Bluetooth is on");
+    if (Srvr_btIsOn) Serial.println("Bluetooth is on");
     else Serial.println("Bluetooth is off");
 
     // There is no connection yet
-    Srvr__btConn = false;
+    Srvr_btConn = false;
 
     // Return the connection result
-    return Srvr__btIsOn;
+    return Srvr_btIsOn;
 }
 
 /* The server state observation loop -------------------------------------------*/
-bool Srvr__loop() 
+bool Srvr_loop()
 {
     // Bluetooh connection checking
-    if (!Srvr__btIsOn) return false;
+    if (!Srvr_btIsOn) return false;
 
     // Show and update the state if it was changed
-    if (Srvr__btConn != Srvr__btClient.hasClient())
+    if (Srvr_btConn != Srvr_btClient.hasClient())
     {
         Serial.print("Bluetooth status:");
-        Srvr__btConn = !Srvr__btConn;
-        if(Srvr__btConn)
-            Serial.println("connected"); 
+        Srvr_btConn = !Srvr_btConn;
+        if(Srvr_btConn)
+            Serial.println("connected");
         else
             Serial.println("disconnected"); 
     }
 
     // Exit if there is no bluetooth connection
-    if (!Srvr__btConn) return false; 
+    if (!Srvr_btConn) return false; 
 
     // Waiting the client is ready to send data
-    while(!Srvr__btClient.available()) 
+    while(!Srvr_btClient.available()) 
     {
         delay(1);
     }
 
     // Set buffer's index to zero
     // It means the buffer is empty initially
-    Buff__bufInd = 0;
+    Buff_msgIndex = 0;
 
     // While the stream of 'client' has some data do...
-    while (Srvr__available())
+    while (Srvr_available())
     {
         // Read a character from 'client'
-        int q = Srvr__read();
+        int q = Srvr_read();
 
         // Save it in the buffer and increment its index
-        Buff__bufArr[Buff__bufInd++] = (byte)q;
+        Buff_message[Buff_msgIndex++] = (byte)q;
         Serial.printf("0x%x ,",(byte)q);
-        if(Buff__bufInd % 16 == 0)
+        if(Buff_msgIndex % 16 == 0)
             Serial.println();
     }
     Serial.println();
 
     // Initialization
-    if (Buff__bufArr[0] == 'I')
+    if (Buff_message[0] == 'I')
     {
-        Srvr__length = 0;
+        Srvr_length = 0;
 
         // Getting of e-Paper's type
-        EPD_dispIndex = Buff__bufArr[1];
+        EPD_dispIndex = Buff_message[1];
 
         // Print log message: initialization of e-Paper (e-Paper's type)
-        Serial.printf("<<<EPD %s", EPD_dispMass[EPD_dispIndex].title);
+        Serial.printf("EPD %s", EPD_dispMass[EPD_dispIndex].title);
 
 
         // Initialization
         EPD_dispInit();
 
-        Buff__bufInd = 0;
-        Srvr__flush();
+        Buff_msgIndex = 0;
+        Srvr_flush();
     }
 
     // Loading of pixels' data
-    else if (Buff__bufArr[0] == 'L')
+    else if (Buff_message[0] == 'L')
     {
         // Print log message: image loading
-        Serial.print("<<<LOAD");
-        int dataSize = Buff__getWord(1);
-        Srvr__length += dataSize;
+        Serial.print("LOAD");
+        int dataSize = Buff_getWord(1);
+        Srvr_length += dataSize;
                 
-        if ((Buff__bufInd < dataSize) || Srvr__length != Buff__getN3(3))
+        if ((Buff_msgIndex < dataSize) || Srvr_length != Buff_getN3(3))
         {
-            Buff__bufInd = 0;
-            Srvr__flush();
+            Buff_msgIndex = 0;
+            Srvr_flush();
 
-            Serial.print(" - failed!>>>");
-            Srvr__write("Error!");
+            Serial.println(" - Failed.");
+            Srvr_write("Error!");
             return true;
         }
        
@@ -154,15 +154,15 @@ bool Srvr__loop()
         // if there is loading function for current channel (black or red)
         if (EPD_dispLoad != 0) EPD_dispLoad();     
 
-        Buff__bufInd = 0;
-        Srvr__flush();
+        Buff_msgIndex = 0;
+        Srvr_flush();
     }
 
     // Initialize next channel
-    else if (Buff__bufArr[0] == 'N')
+    else if (Buff_message[0] == 'N')
     {
         // Print log message: next data channel
-        Serial.print("<<<NEXT");
+        Serial.println("NEXT");
 
         // Instruction code for for writting data into 
         // e-Paper's memory
@@ -192,27 +192,26 @@ bool Srvr__loop()
         // Setup the function for loading choosen channel's data
         EPD_dispLoad = EPD_dispMass[EPD_dispIndex].chRd;
 
-        Buff__bufInd = 0;
-        Srvr__flush();
+        Buff_msgIndex = 0;
+        Srvr_flush();
     }
 
     // Show loaded picture
-    else if (Buff__bufArr[0] == 'S')
+    else if (Buff_message[0] == 'S')
     {
         EPD_dispMass[EPD_dispIndex].show();
                 
-        Buff__bufInd = 0;
-        Srvr__flush();
+        Buff_msgIndex = 0;
+        Srvr_flush();
 
         //Print log message: show
-        Serial.print("<<<SHOW");
+        Serial.println("SHOW");
     }
 
     // Send message "Ok!" to continue
-    Srvr__write("Ok!");
+    Srvr_write("[SERVER] Ready.");
     delay(1);
 
     // Print log message: the end of request processing
-    Serial.print(">>>");
     return true;
 }

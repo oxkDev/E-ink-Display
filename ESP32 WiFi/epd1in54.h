@@ -80,8 +80,9 @@ int EPD_Init_1in54()
     return 0;
 }
 
-void EPD_1IN54_Show(void)
+bool EPD_1IN54_Show(void)
 {
+    bool success = true;
 	int EPD1in54 = 2;
 	if(EPD1in54 == 1) {
 		Serial.print("\r\n EPD_1IN54_Show");
@@ -89,20 +90,22 @@ void EPD_1IN54_Show(void)
 		EPD_Send_1(0x22, 0xC4);// DISPLAY_UPDATE_CONTROL_2
 		EPD_SendCommand( 0x20);// MASTER_ACTIVATION
 		EPD_SendCommand( 0xFF);// TERMINATE_FRAME_READ_WRITE
-		EPD_WaitUntilIdle();
+		success &= EPD_WaitUntilIdle(200);
 
 		// Sleep
 		EPD_SendCommand(0x10);// DEEP_SLEEP_MODE
-		EPD_WaitUntilIdle();
+		success &= EPD_WaitUntilIdle();
 	}
 	else {
 		Serial.print("\r\n EPD_1IN54_V2_Show");
 		EPD_Send_1(0x22, 0xc7); //Display Update Control
 		EPD_SendCommand(0x20); //Activate Display Update Sequence
-		EPD_WaitUntilIdle();
+		success &= EPD_WaitUntilIdle(200);
 	
 		EPD_Send_1(0x10, 0x01);
 	}
+
+    return success;
 }
 
 int EPD_Init_1in54b()
@@ -158,16 +161,18 @@ int EPD_1IN54B_V2_Init(void)
 	return 0;
 }
 
-void EPD_1IN54B_V2_Show(void)
+bool EPD_1IN54B_V2_Show(void)
 {
 	//refresh
     EPD_Send_1(0x22, 0xf7); //Display Update Control
     EPD_SendCommand(0x20);  //Activate Display Update Sequence
-    EPD_WaitUntilIdle_high();
+    bool success = EPD_WaitUntilIdle_high(200);
 	
 	//sleep
     EPD_Send_1(0x10, 0x01); //enter deep sleep
     delay(2);
+
+    return success;
 }
 
 int EPD_Init_1in54c()

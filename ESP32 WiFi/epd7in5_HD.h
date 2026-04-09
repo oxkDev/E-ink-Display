@@ -10,16 +10,14 @@
   */
 
 
-void EPD_7IN5_HD_Readbusy(void)
+bool EPD_7IN5_HD_Readbusy(void)
 {
     Serial.print("\r\ne-Paper busy\r\n");
     delay(200);
-    unsigned char busy;
-    do{
-        busy = digitalRead(PIN_SPI_BUSY);     
-    }while(busy);
+    if (!EPD_WaitUntilIdle_high(200)) return false;
     delay(200);
     Serial.print("e-Paper busy release\r\n");
+    return true;
 }
 
 
@@ -27,7 +25,7 @@ void EPD_7IN5_HD_Readbusy(void)
                       EPD_7IN5_HD
 ******************************************************************************/
 
-static void EPD_7IN5_HD_Show(void)
+static bool EPD_7IN5_HD_Show(void)
 {   
 	unsigned int i;
 	EPD_SendCommand(0x26);
@@ -38,12 +36,14 @@ static void EPD_7IN5_HD_Show(void)
     EPD_SendData(0xF7);
     EPD_SendCommand(0x20);
     delay(200);
-    EPD_7IN5_HD_Readbusy();
+    bool success = EPD_7IN5_HD_Readbusy();
 	
 	EPD_SendCommand(0x10);//sleep
 	EPD_SendData(0x01);
 	
     Serial.print("EPD_7IN5_HD_Show END\r\n");
+
+    return success;
 }
 
 int EPD_7IN5_HD_init() 
@@ -116,18 +116,20 @@ int EPD_7IN5_HD_init()
 ******************************************************************************/
 
 
-static void EPD_7IN5B_HD_Show(void)
+static bool EPD_7IN5B_HD_Show(void)
 {
     EPD_SendCommand(0x22);//show
     EPD_SendData(0xC7);
     EPD_SendCommand(0x20);
     delay(200);
-    EPD_7IN5_HD_Readbusy();
+    bool success = EPD_7IN5_HD_Readbusy();
 	
 	EPD_SendCommand(0x10);//sleep
 	EPD_SendData(0x01);
 	
     Serial.print("EPD_7IN5B_HD_Show END\r\n");
+
+    return success;
 }
 
 int EPD_7IN5B_HD_init() 

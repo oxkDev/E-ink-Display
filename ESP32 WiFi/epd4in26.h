@@ -63,30 +63,15 @@ int EPD_4in26_init()
 }
 
 
-void EPD_4in26_Show(void)
+bool EPD_4in26_Show(void)
 {
     EPD_SendCommand(0x22);
 	EPD_SendData(0xF7);
     EPD_SendCommand(0x20);
-    EPD_WaitUntilIdle_high();
-
+    bool success = EPD_WaitUntilIdle_high(200);
 
     EPD_SendCommand(0x10); // DEEP_SLEEP
     EPD_SendData(0x01);
+
+    return success;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

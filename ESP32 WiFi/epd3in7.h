@@ -44,15 +44,14 @@ static const UBYTE lut_1Gray_GC[] =
 0x22,0x22,0x22,0x22,0x22
 }; 
 
-static void EPD_3IN7_ReadBusy_HIGH(void)
+static bool EPD_3IN7_ReadBusy_HIGH(void)
 {
     Serial.print("e-Paper busy\r\n");
-    UBYTE busy;
-    do {
-        busy = digitalRead(PIN_SPI_BUSY);
-    } while(busy);
+    if (!EPD_WaitUntilIdle_high(200)) return false;
     delay(200);
     Serial.print("e-Paper busy release\r\n");
+
+    return true;
 }
 
 /******************************************************************************
@@ -162,13 +161,15 @@ int EPD_3IN7_1Gray_Init()
 function :  Sends the image buffer in RAM to e-Paper and displays
 parameter:
 ******************************************************************************/
-static void EPD_3IN7_1Gray_Show(void)
+static bool EPD_3IN7_1Gray_Show(void)
 {
 	EPD_3IN7_Load_LUT();
 	EPD_SendCommand(0x20);
-	EPD_3IN7_ReadBusy_HIGH();  
+	bool success = EPD_3IN7_ReadBusy_HIGH();
 	Serial.print("EPD_3IN7_Show END\r\n");
 	
 	EPD_SendCommand(0X10);   //deep sleep
 	EPD_SendData(0x03);
+
+  return success;
 }

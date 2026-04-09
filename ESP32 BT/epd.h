@@ -277,7 +277,7 @@ void EPD_loadA()
     int pos = 6;
 
     // Enumerate all of image data bytes
-    while (pos < Buff__bufInd)
+    while (pos < Buff_msgIndex)
     {
         // Get current byte
         int value = Buff__getByte(pos);
@@ -299,7 +299,7 @@ void EPD_loadAFilp()
     int pos = 6;
 
     // Enumerate all of image data bytes
-    while (pos < Buff__bufInd)
+    while (pos < Buff_msgIndex)
     {
         // Get current byte
         int value = Buff__getByte(pos);
@@ -322,7 +322,7 @@ void EPD_loadB()
     int pos = 6;
 
     // Enumerate all of image data bytes
-    while (pos < Buff__bufInd)
+    while (pos < Buff_msgIndex)
     {
         // Get current word from obtained image data
         int valueA = (int)Buff__getWord(pos);
@@ -363,7 +363,7 @@ void EPD_loadC()
     EPD_Send_4(0x45, 0, 0, 249, 0); //SET_RAM_Y_ADDRESS_START_END_POSITION LO(y), HI(y), LO(h - 1), HI(h - 1)
  
     // Enumerate all of image data bytes
-    while (pos < Buff__bufInd)
+    while (pos < Buff_msgIndex)
     {
         // Before write a line of image data
         // 2.13 e-Paper requires to set the address counter
@@ -399,7 +399,7 @@ void EPD_loadD()
     int pos = 6;
 
     // Enumerate all of image data bytes
-    while (pos < Buff__bufInd)
+    while (pos < Buff_msgIndex)
     {
         // Get current byte from obtained image data
         int valueA = Buff__getByte(pos);
@@ -423,7 +423,7 @@ void EPD_loadE()
     int pos = 6;
 
     // Enumerate all of image data bytes
-    while (pos < Buff__bufInd)
+    while (pos < Buff_msgIndex)
     {
         // Get current byte from obtained image data
         int value = Buff__getByte(pos);  
@@ -451,7 +451,7 @@ void EPD_loadG()
     int pos = 6;
 
     // Enumerate all of image data bytes
-    while (pos < Buff__bufInd)
+    while (pos < Buff_msgIndex)
     {
         // Get current byte from obtained image data
         int value = Buff__getByte(pos);  

@@ -61,7 +61,6 @@ int EPD_13in3k_init()
     return 0;
 }
 
-
 void EPD_13in3k_Show(void)
 {
     EPD_SendCommand(0x22);

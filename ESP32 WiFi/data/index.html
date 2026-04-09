@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>E-Ink Image Uploader</title>
+    <link rel="icon" href="data:;base64,=">
+    <link rel="stylesheet" href="styles.css">
+    <!-- <script src="scriptA.js"></script>
+    <script src="scriptB.js"></script>
+    <script src="scriptC.js"></script>
+    <script src="scriptD.js"></script> -->
+    <script src="script.js"></script>
+</head>
+
+<body>
+    <div id="epdSettings" class="section">
+        <div class="title">Device Settings</div>
+        <div class="menu_item input_field">
+            <label for="ipAddress" class="input_label">Device IP</label>
+            <input id="ipAddress" class="input_elm" type="text" value="192.168.88.150">
+        </div>
+        <div id="displayOptions" class="menu_item input_field">
+            <label for="display" class="input_label">Display Type</label>
+            <select id="displayType" class="input_elm" name="display"></select>
+        </div>
+    </div>
+    <div id="settings" class="section">
+        <div id="imgSettings" class="subsection">
+            <div class="title">Image Adjustments</div>
+            <div id="position" class="short_input_wrapper menu_item">
+                <div class="short_input_field">
+                    <label for="imgX" class="input_label">X</label>
+                    <input id="imgX" class="input_elm" type="text" value="0">
+                </div>
+                <div class="short_input_field">
+                    <label for="imgY" class="input_label">Y</label>
+                    <input id="imgY" class="input_elm" type="text" value="0">
+                </div>
+            </div>
+            <div id="dimensions" class="short_input_wrapper menu_item">
+                <div class="short_input_field">
+                    <label for="imgW" class="input_label">W</label>
+                    <input id="imgW" class="input_elm" type="text">
+                </div>
+                <div class="short_input_field">
+                    <label for="imgH" class="input_label">H</label>
+                    <input id="imgH" class="input_elm" type="text">
+                </div>
+            </div>
+            <div id="scaleOptions" class="menu_item input_field">
+                <label for="scaleMode" class="input_label">Scale Mode</label>
+                <select id="scaleMode" class="input_elm">
+                    <option value="original">Original</option>
+                    <option value="fit" selected>Fit</option>
+                    <option value="fill">Fill</option>
+                </select>
+            </div>
+            <div id="rotateOptions" class="menu_item input_field">
+                <label for="rotateMode" class="input_label">Rotation</label>
+                <select id="rotateMode" class="input_elm">
+                    <option value="0" selected>0°</option>
+                    <option value="90">90°</option>
+                    <option value="180">180°</option>
+                    <option value="270">270°</option>
+                </select>
+            </div>
+        </div>
+        <div id="paletteSettings" class="subsection">
+            <div class="title">Process Settings</div>
+            <div id="bgOptions" class="menu_item input_field inline_input">
+                <label for="bgColour" class="input_label">Background Colour</label>
+                <input id="bgColour" class="colour_input input_elm" type="color" value="#FFFFFF" />
+            </div>
+            <label class="menu_item input_field inline_input">
+                <div class="input_label">Colour</div>
+                <div class="input_elm switch_input">
+                    <input id="setColour" class="knob" type="checkbox" checked="true" />
+                </div>
+            </label>
+            <label class="menu_item input_field inline_input">
+                <div class="input_label">Dithering</div>
+                <div class="input_elm switch_input">
+                    <input id="setDithering" class="knob" type="checkbox" checked="true" />
+                </div>
+            </label>
+        </div>
+    </div>
+    <label for="clear" class="menu_button">
+        <div class="button_label">Clear</div>
+        <input class="hidden_input" id="clear" type="button" />
+    </label>
+    <label for="upload" class="menu_button">
+        <div class="button_label">Upload</div>
+        <input class="hidden_input" id="upload" type="button" />
+    </label>
+    <div class="section" id="logs">
+        <div id="wsStatus">● Connection Status</div>
+        <div class="section" id="logProgress"></div>
+        <div id="logTag">Logs</div>
+    </div>
+    <div class="section" id="images">
+        <div class="image_section">
+            <div class="title">Original</div>
+            <canvas id="source" class="hidden_input"></canvas>
+            <div class="dropbox" id="dropbox">
+                <input id="dropboxInput" type="file" accept="image/*" class="hidden_input" />
+                <label class="heading" id="dropboxHeading" for="dropboxInput">Click to add image.</label>
+                <div id="srcBox" class="img_box"></div>
+            </div>
+        </div>
+        <div id="dstBox" class="image_section"></div>
+    </div>
+</body>
+
+</html>

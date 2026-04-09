@@ -1,0 +1,288 @@
+:root {
+    --primary: #405070;
+    --background: #22374b;
+    --text: #fff;
+    --error: #FF6070;
+    --success: #40e090;
+}
+
+* {
+    font: 14px/20px Tahoma;
+    box-sizing: border-box;
+}
+
+html {
+    color: var(--text);
+}
+
+body {
+    width: 75vw;
+    max-width: 1000px;
+    margin: auto;
+    background: var(--background);
+}
+
+.input_elm {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    appearance: none;
+    border-radius: 15px;
+    color: var(--text);
+    background: var(--primary);
+}
+
+label {
+    display: block;
+}
+
+input:active,
+input:focus,
+select:active,
+select:focus {
+    outline: none;
+}
+
+#settings {
+    /* max-height: max(45vh, 400px); */
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0 40px;
+
+}
+
+.section {
+    margin: 10px auto;
+}
+
+.menu_bar {
+    vertical-align: top;
+    padding: 15px;
+    width: 100%;
+}
+
+#logProgress {
+    height: 20px;
+    width: 100%;
+    margin: 0;
+    border-radius: 10px;
+    background: var(--primary);
+    transition: all ease 0.2s;
+}
+
+.menu_item {
+    margin: 15px 0;
+}
+
+@media (min-width: 500px) {
+    .menu_item, .menu_button{
+        max-width: 250px;
+    }
+
+    .subsection {
+        width: 250px !important;
+    }
+}
+
+.subsection {
+    width: 100%;
+}
+
+.menu_button {
+    width: 100%;
+    min-width: 200px;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 15px;
+    text-align: center;
+    cursor: pointer;
+    display: block;
+    border: 1px solid var(--text);
+    background: linear-gradient(to top right, #0d2dff, #5309ff 15%, #00000000 50%, #00000000) top right/400% 400%;
+
+    transition: all ease 0.2s;
+
+    label {
+        cursor: pointer;
+    }
+}
+
+.menu_button:hover {
+    /* font-weight: bold; */
+    letter-spacing: 1px;
+    background-position: bottom left;
+}
+
+.hidden_input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+.short_input_wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.short_input_field {
+    width: 100%;
+    max-width: 120px;
+}
+
+.input_field .heading {
+    display: block;
+    text-align: left;
+}
+
+.input_label {
+    /* width: 100%; */
+    margin: 10px 0 5px;
+    font-size: 16px;
+    text-align: left;
+}
+
+.inline_input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.colour_input {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    overflow: hidden;
+
+    &::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+}
+
+.switch_input {
+    width: 80px;
+    height: 40px;
+    border-radius: 20px;
+    padding: 0;
+    display: flex;
+    cursor: pointer;
+    transition: all ease 0.2s;
+
+    .knob {
+        width: calc(100% - 20px);
+        min-width: 30px;
+        border-radius: 25px;
+        background: #00000050;
+        margin: 5px;
+        appearance: none;
+        cursor: pointer;
+        transition: all ease 0.2s;
+    }
+
+    .knob:checked {
+        background: var(--text);
+    }
+
+    &::before,
+    &::after {
+        width: 0px;
+        content: '';
+        transition: all ease 0.2s;
+    }
+
+    &:has(input:checked)::before,
+    &:not(:has(input:checked))::after {
+        width: 100%;
+        transition-delay: 100ms;
+    }
+}
+
+.dropbox {
+    min-height: 150px;
+    margin: 10px 0;
+    border: 2px dashed var(--text);
+    border-radius: 20px;
+    background: var(--primary);
+    box-shadow: inset 0 0 50px #00000050;
+    transition: all ease 0.2s;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+
+    .heading {
+        width: auto;
+        margin: 0;
+        padding: 60px 0;
+        font-size: 20px;
+        color: #FFF;
+        text-align: center;
+        transition: all ease 0.2s;
+        cursor: pointer;
+    }
+
+    .heading[overlay] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        background: #00000090;
+    }
+}
+
+.dropbox:hover {
+    background: --background80;
+    box-shadow: inset 0 0 100px #00000050;
+
+    .heading {
+        letter-spacing: 2px;
+        width: 100%;
+    }
+
+    .heading[overlay] {
+        opacity: 0.8;
+    }
+}
+
+#images {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+@media (max-width: 1000px) {
+    #images {
+        flex-wrap: wrap;
+    }
+}
+
+.img_box {
+    width: 100%;
+    padding: 10px;
+}
+
+.img_elm, .image_section {
+    width: 100%;
+}
+
+.title {
+    font: 28px/35px arial;
+    margin: 20px 0 15px;
+}
+
+.heading {
+    width: 100%;
+    font-size: 20px;
+    margin: 40px 0 10px;
+    text-align: left;
+}

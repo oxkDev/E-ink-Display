@@ -13,280 +13,486 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-//#include <ESP8266WiFi.h>// ESP8266 and WiFi classes
 #include <WiFi.h>
+#include <ESPAsyncWebServer.h>  // web server and websocket implementation
+#include <ESPmDNS.h>            // custom web server URL
+#include <LittleFS.h>           // file system implementation
+#include <vector>
 
-#include "buff.h" // POST request data accumulator
-#include "epd.h"  // e-Paper driver
+#include "buff.h"  // POST request data accumulator
+#include "epd.h"   // e-Paper driver
 
-#include "scripts.h" // JavaScript code
-#include "css.h"     // Cascading Style Sheets
-#include "html.h"    // HTML page of the tool
+#define ACCESS_POINT false
 
-/* SSID and password of your WiFi net ----------------------------------------*/
-const char *ssid = "JSBZY-2.4G"; //"your ssid";
-const char *password = "waveshare0755";   //"your password";
+#if ACCESS_POINT
+#define WIFI_LOW_PWR WIFI_POWER_2dBm
+#else
+#define WIFI_LOW_PWR WIFI_POWER_5dBm
+#endif
+
+#define WIFI_NORM_PWR WIFI_POWER_15dBm
+
+/* Hostname, SSID and password of your WiFi net ------------------------------*/
+const char *hostname = "E-ink-ESP32";
+
+#if ACCESS_POINT
+const char *ssid = "EPD-ESP32";
+const char *password = "12345678";
+#else
+const char *ssid = "mesh-wifi-2";             //"your ssid";
+const char *password = "qwerty8558qwerty88";  //"your password";
+#endif
+
+const char *baseURL = "espink";
 
 /* Static IP address Settings ------------------------------------------------*/
-IPAddress staticIP(192, 168, 1, 159);
-IPAddress gateway(192, 168, 1, 1);
+IPAddress staticIP(192, 168, 88, 150);
+IPAddress gateway(192, 168, 88, 1);
 IPAddress subnet(255, 255, 255, 0);
 IPAddress dns(223, 5, 5, 5);
 
-/* Server and IP address ------------------------------------------------------*/
-WiFiServer server(80); // Wifi server exemplar using port 80
-IPAddress myIP;        // IP address in your local wifi net
+/* Server and IP address -----------------------------------------------------*/
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
+IPAddress serverIP;  // IP address in your local wifi net
 
-/* The 'index' page flag ------------------------------------------------------*/
-bool isIndexPage = true; // true : GET  request, client needs 'index' page;
-// false: POST request, server sends empty page.
-/* Server initialization -------------------------------------------------------*/
-void Srvr__setup()
-{
-    Serial.println();
-    Serial.println();
-    Serial.print("Connecting to ");
-    Serial.println(ssid);
+/* Handler enums -------------------------------------------------------------*/
+typedef enum {
+  INIT,
+  LOAD,
+  NEXT,
+  SHOW,
+  STOP,
+  CLEAR,
+  READY,
+  BOOT,
+  EXIT
+} EPDStatus;
 
-	if (WiFi.config(staticIP, gateway, subnet, dns, dns) == false) {
-		Serial.println("Configuration failed.");
-	}
+EPDStatus EPD_Status;
 
-    // Applying SSID and password
-    WiFi.begin(ssid, password);
+std::vector<uint32_t> clientsList;
+uint32_t curClientId = 0;
+uint32_t lastCurClientReq = 0;
+uint32_t reqIndex = 0;
 
-    // Waiting the connection to a router
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
+/* Debug ---------------------------------------------------------------------*/
+// unsigned long timestamp = 0;
 
-    // Connection is complete
-    Serial.println("");
-
-    Serial.println("WiFi connected");
-
-    // Start the server
-    server.begin();
-    Serial.println("Server started");
-
-    // Show obtained IP address in local Wifi net
-    Serial.println(myIP = WiFi.localIP());
+void wsSendCur(const String msg) {
+  if (curClientId != 0 && ws.hasClient(curClientId))
+    ws.client(curClientId)->text(msg);
+  else
+    Serial.println("[WARN] Current client disconnected before message sent.");
 }
 
-/* Sending a script to the client's browser ------------------------------------*/
-bool Srvr__file(WiFiClient client, int fileIndex, char *fileName)
-{
-    // Print log message: sending of script file
-    Serial.print(fileName);
+void wsSendAll(const String msg, const bool skipCurClient = true) {
+  if (ws.count() > 0) {
+    if (!skipCurClient || curClientId == 0)
+      ws.textAll(msg);
+    else
+      for (uint32_t clientId : clientsList)
+        if (clientId != curClientId)
+          ws.client(clientId)->text(msg);
+  } else
+    Serial.println("[WARN] No clients connected to send message.");
+}
 
-    // Sent to the 'client' the header describing the type of data.
-    client.print(fileIndex == 0
-                 ? "HTTP/1.1 200 OK\r\nContent-Type: text/css\r\n\r\n"
-                 : "HTTP/1.1 200 OK\r\nContent-Type: text/javascript\r\n\r\n");
+void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  if (!client || client == nullptr) {
+    Serial.println("[WARN] Websocket event with unknown client.");
+    return;  // Prevent Null Dereference if socket closes abruptly
+  }
 
-    // Choose the index of script
-    // (ESP8266 can't to send all of code by one file
-    // and needs split it on a few parts)
-    switch (fileIndex) {
-    case 0:
-        sendCSS(client);
-        break;
-    case 1:
-        sendJS_A(client);
-        break;
-    case 2:
-        sendJS_B(client);
-        break;
-    case 3:
-        sendJS_C(client);
-        break;
-    case 4:
-        sendJS_D(client);
-        break;
+  if (type == WS_EVT_CONNECT) {
+    Serial.printf("[WS] Client (%d) connected\n", client->id());
+    clientsList.push_back(client->id());
+
+    if (curClientId == 0 && EPD_Status == READY)
+      client->text("READY");
+    else if (EPD_Status == BOOT)
+      client->text("BOOT");
+    else
+      client->text("BUSY");
+    return;
+  }
+
+  if (type == WS_EVT_DISCONNECT) {
+    Serial.printf("[WS] Client (%d) disconnected\n", client->id());
+    clientsList.erase(std::remove(clientsList.begin(), clientsList.end(), client->id()), clientsList.end());
+
+    // if (curClientId == client->id())
+    //   curClientId = 0;
+
+    return;
+  }
+
+  if (type == WS_EVT_DATA) {
+    AwsFrameInfo *info = (AwsFrameInfo *)arg;
+
+    // Ensure we are processing a complete text frame
+    if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+      String msg = String((char *)data, len);
+
+      if (msg.startsWith("RECON_")) {
+        uint32_t reconnectId = msg.substring(6).toInt();
+        if (reconnectId == curClientId) {
+          curClientId = client->id();
+          lastCurClientReq = millis();
+          client->text("RECON_" + String(curClientId));
+          Serial.printf("[WS] Reconnected client (%d -> %d)\n", reconnectId, client->id());
+          if (EPD_Status == READY)
+            client->text("ACK_" + String(reqIndex));
+          else
+            client->text("RUNNING_" + String(curClientId));
+        } else {
+          client->text("ERROR_UNKOWN_CLIENT_ID");
+          Serial.printf("[WS] Unknown Reconnect Request (%d -> %d)\n", reconnectId, client->id());
+        }
+        return;
+      }
+
+      if (EPD_Status != READY) {
+        if (curClientId == client->id()) {
+          client->text("RUNNING_" + String(curClientId));
+          Serial.printf("[WS] Rejected current client (%d).\n", client->id());
+        } else {
+          client->text("BUSY");
+          Serial.printf("[WS] Rejected client (%d).\n", client->id());
+        }
+        return;
+      }
+
+      if (curClientId != 0 && curClientId != client->id()) {
+        client->text("BUSY");
+        Serial.printf("[WS] Rejected client (%d).\n", client->id());
+        return;
+      }
+
+      if (curClientId == client->id())
+        lastCurClientReq = millis();
+
+      if (msg.startsWith("INIT_")) {
+        lastCurClientReq = millis();
+        reqIndex = 0;
+        curClientId = client->id();
+        client->text("RUNNING_" + String(curClientId));
+        wsSendAll("BUSY");
+        // Getting of e-Paper's type
+        EPD_dispIndex = msg.substring(5).toInt();
+        EPD_Status = INIT;
+
+        Serial.printf("[WS] Init EPD %d: %s\n", EPD_dispIndex, EPD_dispMass[EPD_dispIndex].title);
+        return;
+      }
+
+      if (msg.startsWith("LOAD_")) {
+        client->text("RUNNING_" + String(curClientId));
+        reqIndex++;
+        Serial.printf("[WS] LOAD (%d)\n", reqIndex);
+        String dataStr = msg.substring(5);
+        // Boundary check
+        if (dataStr.length() > BUFF_MAX_CHUNK_SIZE) {
+          Serial.println("[ERROR] Incoming chunk exceeds buffer size!");
+          client->text("ERROR_BUFFER_OVERFLOW");
+          return;  // Abort processing
+        }
+
+        Buff_msgIndex = dataStr.length();
+        dataStr.toCharArray(Buff_message, Buff_msgIndex + 1);
+        EPD_Status = LOAD;
+        return;
+      }
+
+      if (msg == "NEXT") {
+        client->text("RUNNING_" + String(curClientId));
+        reqIndex++;
+        Serial.println("[WS] NEXT IC");
+        EPD_Status = NEXT;
+        return;
+      }
+
+      if (msg == "CLEAR") {
+        client->text("RUNNING_" + String(curClientId));
+        reqIndex++;
+        Serial.println("[WS] CLEAR");
+        EPD_Status = CLEAR;
+        return;
+      }
+
+      if (msg == "SHOW") {
+        client->text("RUNNING_" + String(curClientId));
+        reqIndex++;
+        Serial.println("[WS] SHOW");
+        EPD_Status = SHOW;
+        return;
+      }
     }
 
-    client.print("\r\n");
-    delay(1);
+    Serial.printf("[WS] Unknown request (%d%d%d): %s", info->final, info->index == 0, info->len == len, info->opcode == WS_TEXT, (char *)data);
+    client->text("ERROR_UNKNOWN_REQUEST");
+  }
+}
 
-    // Print log message: the end of request processing
-    Serial.println(">>>");
+void EPDHandler() {
+  const uint32_t t = millis();
+  if (curClientId != 0 && t - lastCurClientReq > 30000 && t > lastCurClientReq) {
+    Serial.printf("[ERROR] Current Client Timeout: %u - %u\n", t, lastCurClientReq);
+    curClientId = 0;
+    reqIndex = 0;
+    EPD_Status = EXIT;
+    EPD_Exit();
+    EPD_Status = READY;
+    wsSendAll("READY");
+  }
 
-    return true;
+  if (EPD_Status == INIT) {
+    // Initialization
+    bool success = EPD_dispInit();
+    delay(500);
+    EPD_Status = READY;
+    if (success)
+      wsSendCur("ACK_" + String(reqIndex));
+    else {
+      // Zero power consumption
+      EPD_Exit();
+      wsSendCur("ERROR_INIT_FAILED");
+    }
+    return;
+  }
+
+  if (EPD_Status == LOAD) {
+    // Load data into the e-Paper
+    if (EPD_dispLoad != 0) {
+      EPD_dispLoad();
+      EPD_Status = READY;
+      wsSendCur("ACK_" + String(reqIndex));
+    } else {
+      EPD_Status = READY;
+      wsSendCur("ERROR_UNKNOWN_DISPLAY");
+    }
+    return;
+  }
+
+  if (EPD_Status == NEXT) {
+    int nextCode = EPD_dispMass[EPD_dispIndex].next;
+
+    // Instruction code for for writting data into e-paper's memory
+    if (EPD_dispIndex == 34) {
+      if (flag == 0)
+        nextCode = 0x26;
+      else
+        nextCode = 0x13;
+    } else if (EPD_dispIndex == 50) {
+      EPD_CS_ALL(1);
+      digitalWrite(PIN_SPI_CS_S, 0);
+      EPD_SendCommand_13in3E6(0x10);
+    }
+
+    if (nextCode != -1) {  // Skip normal send command with -1.
+      EPD_SendCommand(nextCode);
+      delay(2);
+    }
+
+    EPD_dispLoad = EPD_dispMass[EPD_dispIndex].loadRed;
+    EPD_Status = READY;
+    wsSendCur("ACK_" + String(reqIndex));
+    return;
+  }
+
+  if (EPD_Status == CLEAR) {
+    // Load clear iamge into the e-Paper
+    if (EPD_dispIndex == 50) {
+      EPD_13in3E_Clear(EPD_13in3E_WHITE);
+    } else {
+      // Zero power consumption
+      EPD_Exit();
+      wsSendCur("ERROR_CLEAR_UNSUPPORTED");
+      EPD_Status = READY;
+    }
+
+    EPD_Status = READY;
+    wsSendCur("ACK_" + String(reqIndex));
+    return;
+  }
+
+  if (EPD_Status == SHOW) {
+    if (!WiFi.setTxPower(WIFI_LOW_PWR))
+      Serial.println("[WARN] Failed to set wifi transmission power to 8.5dBm.");
+
+    delay(2000);
+#if ACCESS_POINT
+    Serial.printf("[WiFi] Low Power RSSI: %d\n", WiFi.RSSI());
+#endif
+
+    bool success = false;
+    uint8_t tries = 0;
+    while (tries < 3) {
+      if (!success) {
+        tries++;
+        if (tries > 1)
+          wsSendCur(("ERROR_DRF_TRY_" + String(tries)).c_str());
+      } else
+        break;
+      success = EPD_dispMass[EPD_dispIndex].show();
+      delay(1000);
+    }
+
+    // Zero power consumption
+    EPD_Exit();
+    delay(1000);
+    if (!WiFi.setTxPower(WIFI_NORM_PWR))
+      Serial.println("[WARN] Failed to set wifi transmission power to 19dBm.");
+
+    delay(1000);
+#if ACCESS_POINT
+    Serial.printf("[WiFi] Normal Power RSSI: %d\n", WiFi.RSSI());
+#endif
+
+    EPD_Status = READY;
+
+    if (success) {
+      wsSendCur("DONE");
+      wsSendAll("READY");
+    } else
+      wsSendCur("ERROR_DRF_FAILED");
+    curClientId = 0;
+  }
+}
+
+/* Server initialization ------------------------------------------------------*/
+#if ACCESS_POINT == false
+bool WiFiAttemptConnect() {
+  WiFi.begin(ssid, password);
+
+  // Waiting the connection to a router
+  uint8_t timeCounter = 0;
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    if (timeCounter == 20) {
+      Serial.println("\n[ERROR] Connection Failed, Timeout.");
+      return false;
+    }
+    timeCounter++;
+  }
+  // Connection is complete
+  Serial.println("\n[WiFi] Wi-Fi connected.");
+
+  return true;
+}
+#endif
+
+bool Srvr_setup() {
+#if ACCESS_POINT
+  Serial.println("\n[AP] Initialising Access Point.");
+#else
+  Serial.println("\n[WiFi] Initialising Wi-Fi.");
+#endif
+
+  bool WiFiSuccess = true;
+
+  // Applying hostname, SSID and password
+  if (!WiFi.setHostname(hostname))
+    Serial.println("[WARN] Failed to set hostname.");
+
+#if ACCESS_POINT
+  WiFi.mode(WIFI_AP);
+  WiFiSuccess &= WiFi.softAPConfig(staticIP, gateway, subnet);
+  if (!WiFiSuccess)
+    Serial.println("[ERROR] AP Config Failed.");
+
+  WiFiSuccess &= WiFi.softAP(ssid, password);
+  if (!WiFiSuccess)
+    Serial.println("[ERROR] AP Start Failed.");
+
+  if (WiFiSuccess)
+    Serial.println("[AP] AP Initialised.");
+  else
+    Serial.println("[ERROR] Initialise Access Point Failed.");
+#else
+  WiFi.mode(WIFI_STA);
+
+  Serial.print("[WiFi] Connecting to ");
+  Serial.println(ssid);
+
+  WiFiSuccess &= WiFi.config(staticIP, gateway, subnet, dns, dns);
+  if (!WiFiSuccess)
+    Serial.println("[ERROR] WiFi Config failed.");
+
+  WiFiAttemptConnect();
+
+  if (WiFiSuccess)
+    Serial.println("[WiFi] Wi-Fi Initialised.");
+  else
+    Serial.println("[ERROR] Initialise Wi-Fi Failed.");
+#endif
+
+
+  Serial.println("\n[SERVER] Initialising Server...");
+
+  // Initialize mDNS
+  // uint8_t mac[6];
+  // WiFi.macAddress(mac);
+  // char chipId[7];
+  // snprintf(chipId, 7, "%02X%02X%02X", mac[3], mac[4], mac[5]);
+  // String fullURL = String(baseURL) + "-" + String(chipId);
+
+  if (!MDNS.begin(baseURL))
+    Serial.println("[ERROR] Set MDNS URL Failed.");
+
+  MDNS.addService("http", "tcp", 80);
+
+  // Initialise LittleFS to serve files
+  if (!LittleFS.begin(true)) {
+    Serial.println("[ERROR] Mounting LittleFS Failed.");
+  }
+
+  // bind websocket to Server
+  ws.onEvent(wsEvent);
+  server.addHandler(&ws);
+
+  // Serve the static files from the /data folder
+  server.serveStatic("/", LittleFS, "/").setDefaultFile("/index.html");
+
+  // server.on()
+
+  // Start the server
+  server.begin();
+  Serial.println("[SERVER] Server started.");
+
+  // Show obtained IP address in local Wifi net
+#if ACCESS_POINT
+  Serial.print("[SERVER] AP IP Address: ");
+  Serial.println(serverIP = WiFi.softAPIP());
+#else
+  Serial.print("[SERVER] IP Address: ");
+  Serial.println(serverIP = WiFi.localIP());
+#endif
+  Serial.printf("[SERVER] URL: http://%s.local", baseURL);
+  Serial.print("[SERVER] Hostname: ");
+  Serial.println(WiFi.getHostname());
+
+  return true;
 }
 
 /* The server state observation loop -------------------------------------------*/
-bool Srvr__loop()
-{
-    // Looking for a client trying to connect to the server
-    WiFiClient client = server.available();
-    int16_t label = 0;
-    int16_t fale = 1000;
 
-    // Exit if there is no any clients
-    if (!client)
-        return false;
+static unsigned long lastCleanup = 0;
 
-    // Print log message: the start of request processing
-    Serial.print("<<<");
+void Srvr_loop() {
+  EPDHandler();
 
-    // Waiting the client is ready to send data
-    while (!client.available())
-    {
-        delay(1); 
-        label++;
-        if(label > fale)
-        {
-            label = fale + 1;
-            if(!server.available())
-                return false;
-        }
-    }
+  // Only lock the Async thread once every 1000 milliseconds
+  if (millis() - lastCleanup > 1000) {
+    ws.cleanupClients();
+    lastCleanup = millis();
+  }
 
-    // Set buffer's index to zero
-    // It means the buffer is empty initially
-    Buff__bufInd = 0;
-
-    // While the stream of 'client' has some data do...
-    while (client.available()) {
-        // Read a character from 'client'
-        int q = client.read();
-
-        // Save it in the buffer and increment its index
-        Buff__bufArr[Buff__bufInd++] = (byte)q;
-
-        // If the carachter means the end of line, then...
-        if ((q == 10) || (q == 13)) {
-            // Clean the buffer
-            Buff__bufInd = 0;
-            continue;
-        }
-
-        // Requests of files
-        if (Buff__bufInd >= 11) {
-            if (Buff__signature(Buff__bufInd - 11, "/styles.css"))
-                return Srvr__file(client, 0, "styles.css");
-
-            if (Buff__signature(Buff__bufInd - 11, "/scriptA.js"))
-                return Srvr__file(client, 1, "scriptA.js");
-
-            if (Buff__signature(Buff__bufInd - 11, "/scriptB.js"))
-                return Srvr__file(client, 2, "scriptB.js");
-
-            if (Buff__signature(Buff__bufInd - 11, "/scriptC.js"))
-                return Srvr__file(client, 3, "scriptC.js");
-
-            if (Buff__signature(Buff__bufInd - 11, "/scriptD.js"))
-                return Srvr__file(client, 4, "scriptD.js");
-        }
-
-        // If the buffer's length is larger, than 4 (length of command's name), then...
-        if (Buff__bufInd > 4) {
-            // It is probably POST request, no need to send the 'index' page
-            isIndexPage = false;
-
-            // e-Paper driver initialization
-            if (Buff__signature(Buff__bufInd - 4, "EPD")) {
-                Serial.print("\r\nEPD\r\n");
-                // Getting of e-Paper's type
-                EPD_dispIndex = (int)Buff__bufArr[Buff__bufInd - 1] - (int)'a';
-                if(EPD_dispIndex < 0)
-                  EPD_dispIndex = (int)Buff__bufArr[Buff__bufInd - 1] - (int)'A' + 26;
-                // Print log message: initialization of e-Paper (e-Paper's type)
-                Serial.printf("EPD %s", EPD_dispMass[EPD_dispIndex].title);
-
-                // Initialization
-                EPD_dispInit();
-                //client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
-                break;
-            }
-
-            // Image loading
-            if (Buff__signature(Buff__bufInd - 4, "LOAD")) {
-                // Print log message: image loading
-                Serial.print("LOAD");
-
-                // Load data into the e-Paper
-                // if there is loading function for current channel (black or red)
-                if (EPD_dispLoad != 0)
-                    EPD_dispLoad();
-                //client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
-                break;
-            }
-
-            // Select the next data channel
-            if (Buff__signature(Buff__bufInd - 4, "NEXT")) {
-                // Print log message: next data channel
-                Serial.print("NEXT");
-
-                // Instruction code for for writting data into
-                // e-Paper's memory
-                int code = EPD_dispMass[EPD_dispIndex].next;
-                if(EPD_dispIndex == 34)
-                {
-                    if(flag == 0)
-                        code = 0x26;
-                    else
-                        code = 0x13;
-                }
-
-                if (EPD_dispIndex == 50) {
-                    EPD_CS_ALL(1);
-                    digitalWrite(PIN_SPI_CS_S, 0);
-                    EPD_SendCommand_13in3E6(0x10);
-                }
-
-                // If the instruction code isn't '-1', then...
-                if (code != -1) {
-                    // Print log message: instruction code
-                    Serial.printf(" %x", code);
-
-                    // Do the selection of the next data channel
-                    EPD_SendCommand(code);
-                    delay(2);
-                }
-
-                // Setup the function for loading choosen channel's data
-                EPD_dispLoad = EPD_dispMass[EPD_dispIndex].chRd;
-                //client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
-                break;
-            }
-
-            // If the loading is complete, then...
-            if (Buff__signature(Buff__bufInd - 4, "SHOW")) {
-                // Show results and Sleep
-                EPD_dispMass[EPD_dispIndex].show();
-
-                //Print log message: show
-                Serial.print("\r\nSHOW");
-                //client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
-                break;
-            }
-
-            // If the routine reaches this code,
-            // it means the there is no known commands,
-            // the server has to send the 'index' page
-            isIndexPage = true;
-        }
-    }
-
-    // Clear data stream of the 'client'
-    client.flush();
-
-    // Sent to the 'client' the header describing the type of data.
-    // In this case 'Content-Type' is 'text/html'
-    client.print("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n");
-
-    // Send the 'index' page if it's needed
-    if (isIndexPage)
-        sendHtml(client, myIP);
-    else
-        client.print("Ok!");
-
-    client.print("\r\n");
-    delay(1);
-
-    // Print log message: the end of request processing
-    Serial.println(">>>");
-    return true;
+#if ACCESS_POINT == false
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[WiFi] Wi-Fi Disconnected, attempting to reconnect.");
+    WiFiAttemptConnect();
+  }
+#endif
 }
