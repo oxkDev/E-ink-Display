@@ -282,7 +282,7 @@ bool EPD_13in3E_Show(void) {
     EPD_SendData_13in3E6(0x00);
     EPD_CS_ALL(1);
     success &= EPD_WaitUntilIdle(200, 150);
-    
+
     if (!success)
       Serial.println("[ERROR] Write DRF Failed.");
     else
@@ -318,28 +318,29 @@ bool EPD_13in3E_Show(void) {
 void EPD_13in3E_Clear(uint8_t colourCode) {
   Serial.println("[EPD] Uploading clear image...");
   // uint32_t width = 600, height = 1600;
-  uint8_t colourBuff;
-  colourBuff = (colourCode << 4) | colourCode;
-
-  uint8_t buff[300];  // width (1200) / 2 / 2
-
-  for (uint32_t j = 0; j < 300; j++) {
-    buff[j] = colourBuff;
-  }
+  uint8_t colourByte;
+  colourByte = (colourCode << 4) | colourCode;
 
   digitalWrite(PIN_SPI_CS_M, 0);
   EPD_SendCommand_13in3E6(0x10);
+
+  fspi.beginTransaction(spi_settings);
   for (uint32_t j = 0; j < 1600; j++) {
     for (int i = 0; i < 300; i++)
-      EPD_SendData_13in3E6(buff[i]);
+    fspi.transfer(colourByte);
   }
-  EPD_CS_ALL(1);
+  fspi.endTransaction();
 
+  EPD_CS_ALL(1);
   digitalWrite(PIN_SPI_CS_S, 0);
   EPD_SendCommand_13in3E6(0x10);
+
+  fspi.beginTransaction(spi_settings);
   for (uint32_t j = 0; j < 1600; j++) {
     for (int i = 0; i < 300; i++)
-      EPD_SendData_13in3E6(buff[i]);
+    fspi.transfer(colourByte);
   }
+  fspi.endTransaction();
+
   EPD_CS_ALL(1);
 }

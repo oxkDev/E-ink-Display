@@ -15,6 +15,7 @@
   *           void EPD_Send_5(byte c, byte v1, byte v2, byte v3, byte v4, byte v5);
   *           void EPD_Reset();
   *           void EPD_dispInit();
+  *           void EPD_Exit();
   *           
   *          varualbes:
   *           EPD_dispLoad;                - pointer on current loading function
@@ -23,45 +24,8 @@
   *           
   ******************************************************************************
   */
-#include <list>
-
-/* SPI pin definition --------------------------------------------------------*/
-
-// WEMOS LOLIN D32 LITE
-
-// #define PIN_SPI_DIN  13
-// #define PIN_SPI_SCK  14
-// #define PIN_SPI_CS_M 15
-// #define PIN_SPI_CS_S 2
-// #define PIN_SPI_CS PIN_SPI_CS_M
-// #define PIN_SPI_DC   27 //22
-// #define PIN_SPI_RST  26 //21
-// #define PIN_SPI_BUSY 25 //19
-// #define PIN_SPI_PWR  33
-
-// ESP32 C6
-
-// #define PIN_SPI_DIN 7
-// #define PIN_SPI_SCK 6
-// #define PIN_SPI_CS_M 18
-// #define PIN_SPI_CS_S 19
-// #define PIN_SPI_CS PIN_SPI_CS_M
-// #define PIN_SPI_DC 0
-// #define PIN_SPI_RST 1
-// #define PIN_SPI_BUSY 10
-// #define PIN_SPI_PWR 11
-
-// ESP32 S3
-
-#define PIN_SPI_DIN 11
-#define PIN_SPI_SCK 12
-#define PIN_SPI_CS_M 16
-#define PIN_SPI_CS_S 15
-#define PIN_SPI_CS PIN_SPI_CS_M
-#define PIN_SPI_DC 7
-#define PIN_SPI_RST 6
-#define PIN_SPI_BUSY 5
-#define PIN_SPI_PWR 4
+#include <vector>
+#include <SPI.h>
 
 /* Pin level definition ------------------------------------------------------*/
 #define LOW 0
@@ -69,6 +33,41 @@
 
 #define GPIO_PIN_SET 1
 #define GPIO_PIN_RESET 0
+
+/* SPI pin definition --------------------------------------------------------*/
+
+#define ESP32S3 true
+
+#if ESP32S3
+// ESP32 S3
+#define PIN_SPI_DIN 11
+#define PIN_SPI_SCK 12
+#define PIN_SPI_CS_M 16
+#define PIN_SPI_CS_S 15
+#define PIN_SPI_DC 7
+#define PIN_SPI_RST 6
+#define PIN_SPI_BUSY 5
+#define PIN_SPI_PWR 4
+#else
+// ESP32 C6
+#define PIN_SPI_DIN 7
+#define PIN_SPI_SCK 6
+#define PIN_SPI_CS_M 18
+#define PIN_SPI_CS_S 19
+#define PIN_SPI_DC 20
+#define PIN_SPI_RST 21
+#define PIN_SPI_BUSY 22
+#define PIN_SPI_PWR 23
+#endif
+
+#define PIN_SPI_CS PIN_SPI_CS_M
+
+SPIClass fspi(FSPI);
+
+SPISettings spi_settings(20000000, MSBFIRST, SPI_MODE0);
+
+
+void EPD_Exit(void);
 
 void EPD_initSPI() {
   pinMode(PIN_SPI_BUSY, INPUT);
@@ -86,6 +85,8 @@ void EPD_initSPI() {
   digitalWrite(PIN_SPI_CS_S, HIGH);
   digitalWrite(PIN_SPI_SCK, LOW);
   digitalWrite(PIN_SPI_PWR, HIGH);
+
+  fspi.begin(PIN_SPI_SCK, -1, PIN_SPI_DIN, -1);
 }
 
 void GPIO_Mode(unsigned char GPIO_Pin, unsigned char Mode) {
@@ -113,18 +114,25 @@ byte lut_partial_mono[] = {
 
 /* The procedure of sending a byte to e-Paper by SPI -------------------------*/
 void EPD_SendByte(byte data) {
-  for (int i = 0; i < 8; i++) {
-    if ((data & 0x80) == 0) digitalWrite(PIN_SPI_DIN, GPIO_PIN_RESET);
-    else digitalWrite(PIN_SPI_DIN, GPIO_PIN_SET);
+  // for (int i = 0; i < 8; i++) {
+  //   if ((data & 0x80) == 0) digitalWrite(PIN_SPI_DIN, GPIO_PIN_RESET);
+  //   else digitalWrite(PIN_SPI_DIN, GPIO_PIN_SET);
 
-    data <<= 1;
-    digitalWrite(PIN_SPI_SCK, GPIO_PIN_SET);
-    digitalWrite(PIN_SPI_SCK, GPIO_PIN_RESET);
-  }
+  //   data <<= 1;
+  //   digitalWrite(PIN_SPI_SCK, GPIO_PIN_SET);
+  //   digitalWrite(PIN_SPI_SCK, GPIO_PIN_RESET);
+  // }
 
-  //SPI.beginTransaction(spi_settings);
-  //SPI.transfer(data);
-  //SPI.endTransaction();
+  fspi.beginTransaction(spi_settings);
+  fspi.transfer(data);
+  fspi.endTransaction();
+}
+
+void EPD_SendByteList(std::vector<byte> dataList) {
+  fspi.beginTransaction(spi_settings);
+  for (byte data : dataList)
+    fspi.transfer(data);
+  fspi.endTransaction();
 }
 
 unsigned char DEV_SPI_ReadByte() {
@@ -179,11 +187,9 @@ void EPD_SendData_13in3E6(byte data) {
   EPD_SendByte(data);
 }
 
-void EPD_SendDataList_13in3E6(std::list<byte> dataList) {
+void EPD_SendDataList_13in3E6(std::vector<byte> dataList) {
   digitalWrite(PIN_SPI_DC, HIGH);
-
-  for (byte data : dataList)
-    EPD_SendByte(data);
+  EPD_SendByteList(dataList);
 }
 
 /* Waiting the e-Paper is ready for further instructions ---------------------*/
@@ -302,15 +308,16 @@ bool EPD_Reset() {
   bool success = false;
   int resetTries = 0;
   while (!success) {
+    digitalWrite(PIN_SPI_RST, LOW);
     digitalWrite(PIN_SPI_CS, HIGH);
     digitalWrite(PIN_SPI_CS_S, HIGH);
     digitalWrite(PIN_SPI_SCK, LOW);
     digitalWrite(PIN_SPI_PWR, HIGH);
-    delay(1000);
+    delay(200);
     digitalWrite(PIN_SPI_RST, HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(PIN_SPI_RST, LOW);
-    delay(50);
+    delay(5);
     digitalWrite(PIN_SPI_RST, HIGH);
     // delay(200);
     // digitalWrite(PIN_SPI_RST, LOW);
@@ -324,7 +331,7 @@ bool EPD_Reset() {
       return false;
     }
     if (!success) {
-      digitalWrite(PIN_SPI_PWR, LOW);
+      EPD_Exit();
       delay(5000);
     }
   }
@@ -578,6 +585,7 @@ void EPD_loadG() {
 void EPD_load_13in3E6() {
   // Get the index of the image data begin
   int pos = 0;
+  fspi.beginTransaction(spi_settings);
 
   // Enumerate all of image data bytes
   while (pos < Buff_msgIndex) {
@@ -590,11 +598,14 @@ void EPD_load_13in3E6() {
     int B = (value >> 4) & 0x07;
 
     // Write the data into e-Paper's memory
-    EPD_SendData_13in3E6((byte)(A << 4) + B);
+    // EPD_SendData_13in3E6((byte)(A << 4) + B);
+    fspi.transfer((byte)(A << 4) + B);
 
     // Increment the current byte index on 2 characters
     pos += 2;
   }
+
+  fspi.endTransaction();
 }
 
 /* Show image and turn to deep sleep mode (a-type, 4.2 and 2.7 e-Paper) ------*/
@@ -761,7 +772,10 @@ bool EPD_dispInit() {
 /* Exit and Power down EPD ---------------------------------------------------*/
 void EPD_Exit() {
   Serial.println("[EPD] HAT+ Power Off.");
-  digitalWrite(PIN_SPI_PWR, LOW);
+  delay(300);
   digitalWrite(PIN_SPI_RST, LOW);
+  digitalWrite(PIN_SPI_DIN, LOW);
+  digitalWrite(PIN_SPI_SCK, LOW);
   delay(100);
+  digitalWrite(PIN_SPI_PWR, LOW);
 }

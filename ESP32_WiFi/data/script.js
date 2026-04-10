@@ -87,9 +87,10 @@ let srcImg = new Image(),
     epdIndex = 50,
     curPaletteRGB = [],
     curPaletteLab = [],
-    labCache = new Map(),
+    rgbDistCache = new Map(),
     curPaletteCodes = [],
     dstColourCodesBuffer = new Uint8Array();
+
 
 function processFiles(files) {
     if (!files.length) return;
@@ -98,7 +99,7 @@ function processFiles(files) {
     let reader = new FileReader();
     srcImg = new Image();
     reader.onload = function (e) {
-        setInn("srcBox", "<img id=\"imgView\" class=\"img_elm\">");
+        getElm("srcBox").classList.remove("hidden");
         let img = getElm("imgView");
         img.src = e.target.result;
         srcImg.src = e.target.result;
@@ -108,7 +109,7 @@ function processFiles(files) {
         dropboxHeading.setAttribute("overlay", "true");
         dropboxHeading.innerHTML = "Click to replace image.";
 
-        setTimeout(() => processImg(), 100);
+        setTimeout(() => processInputs(), 100);
     };
 
     reader.readAsDataURL(file);
@@ -131,10 +132,33 @@ function displayOptionElm(vl, tx) {
     return "<option name=\"kind\" value=\"" + vl + "\" " + (vl == 50 ? "selected" : "") + ">" + tx + "</option>";
 }
 
-function updateEPD(index) {
-    getElm("imgW").value = +epdData[index].width;
-    getElm("imgH").value = +epdData[index].height;
+function updateDimensions(index) {
+    getElm("imgW").value = epdData[index].width;
+    getElm("imgH").value = epdData[index].height;
     epdIndex = index;
+}
+
+function processInputs() {
+    dithering = getElm("setDithering").checked;
+    colour = getElm("setColour").checked;
+
+    let paletteIndex = epdData[epdIndex].paletteIndex;
+
+    setPalette(paletteIndex);
+
+    if (colour) {
+        if (palettes[paletteIndex] === undefined || palettes[paletteIndex].length <= 2) {
+            alert("Selected display does not support colour.");
+            colour = false;
+            getElm("setColour").checked = false;
+        }
+    } else
+        if (palettes[paletteIndex] !== undefined && palettes[paletteIndex].length > 2)
+            setPalette(0);
+
+    rgbDistCache = new Map();
+
+    processImg();
 }
 
 // Elements Initialisation
@@ -166,7 +190,7 @@ window.addEventListener("load", () => {
     const inputIDs = ["bgColour", "setColour", "setDithering", "rotateMode", "scaleMode", "imgH", "imgW", "imgY", "imgX"];
 
     for (let i = 0; i < inputIDs.length; i++)
-        getElm(inputIDs[i]).addEventListener("change", processImg);
+        getElm(inputIDs[i]).addEventListener("change", processInputs);
 
     let optionsHTML = "";
 
@@ -177,11 +201,11 @@ window.addEventListener("load", () => {
 
     const selectionElm = getElm("displayType");
     selectionElm.addEventListener("change", (e) => {
-        updateEPD(selectionElm.value);
-        processImg();
+        updateDimensions(selectionElm.value);
+        processInputs();
     });
 
-    updateEPD(selectionElm.value);
+    updateDimensions(selectionElm.value);
 
     getElm("ipAddress").addEventListener("change", () => {
         if (ws.readyState != WebSocket.OPEN)
@@ -200,6 +224,7 @@ let wsTimeout = 0, reqTimeout = 0;
 let clientId = 0;
 
 function wsConnect() {
+    console.log("Hardware connecting.");
     clearTimeout(wsTimeout);
     let ip = getElm("ipAddress").value;
     ws = new WebSocket("ws://" + ip + "/ws");
@@ -212,14 +237,14 @@ function wsConnect() {
         getElm("wsStatus").style.color = "var(--success)";
         getElm("wsStatus").innerText = "● Hardware Connected";
         clearTimeout(wsTimeout);
-        console.log("Hardware connected."); 
+        console.log("Hardware connected.");
         if (commandQueue.length != 0 && commandQueue[queueIndex].payload.startsWith("LOAD")) {
             console.log("Attempting Reconnection.");
             ws.send(`RECON_${clientId}`);
         }
     };
 
-    ws.onclose = (evt) => {
+    ws.onclose = () => {
         getElm("wsStatus").style.color = "var(--error)";
         getElm("wsStatus").innerText = "● Disconnected";
         clearTimeout(reqTimeout);
@@ -263,7 +288,7 @@ function wsConnect() {
         }
         if (msg.startsWith("RUNNING_")) {
             clientId = msg.substring(8);
-            getElm("logTag").innerText += ".";
+            getElm("logTag").innerText += "...";
             console.log(`Running (session ${clientId})`);
             return;
         }
@@ -290,7 +315,7 @@ function wsConnect() {
 }
 
 // SCRIPT B
-let shiftX, shiftY, imgW, imgH, sW, sH;
+let imgW, imgH;
 
 function setColourCode(pixelIndex, colourIndex) {
     let dataIndex = pixelIndex * 4;
@@ -326,11 +351,9 @@ function rgbToLab(r, g, b) {
     x /= 0.95047;
     z /= 1.08883;
 
-    let f = (t) => t > 0.008856 ? Math.pow(t, 1 / 3) : (7.787 * t) + (16 / 116);
-
-    let fx = f(x);
-    let fy = f(y);
-    let fz = f(z);
+    let fx = x > 0.008856 ? Math.pow(x, 1 / 3) : (7.787 * x) + (16 / 116);
+    let fy = y > 0.008856 ? Math.pow(y, 1 / 3) : (7.787 * y) + (16 / 116);
+    let fz = z > 0.008856 ? Math.pow(z, 1 / 3) : (7.787 * z) + (16 / 116);
 
     return [
         (116 * fy) - 16,
@@ -339,37 +362,48 @@ function rgbToLab(r, g, b) {
     ];
 }
 
+let cacheHits = 0;
+
 function getNear(r, g, b) {
-    r = Math.round(r * 1000) / 1000;
-    g = Math.round(g * 1000) / 1000;
-    b = Math.round(b * 1000) / 1000;
+    r = Math.round(r);
+    g = Math.round(g);
+    b = Math.round(b);
 
     let key = (r << 16) | (g << 8) | b;
 
-    let lab = labCache.get(key);
-    if (!lab) {
-        lab = rgbToLab(r, g, b);
-        labCache.set(key, lab);
-    }
+    let best = rgbDistCache.get(key);
+    // let best = rgbDistCache[key];
 
-    let best = 0;
+    if (best !== undefined) {
+        cacheHits++;
+        return best;
+    } 
+
+    best = 0;
     let bestDist = Infinity;
+    let lab = rgbToLab(r, g, b);
 
-    for (let i = 0; i < curPaletteLab.length; i++) {
+    let i = 0;
+
+    while (i < curPaletteLab.length) {
         let p = curPaletteLab[i];
 
         let dL = lab[0] - p[0];
         let da = lab[1] - p[1];
         let db = lab[2] - p[2];
 
-        let dist = dL * dL + da * da + db * db;
+        let checkDist = dL * dL + da * da + db * db;
 
-        if (dist < bestDist) {
-            bestDist = dist;
+        if (checkDist < bestDist) {
+            bestDist = checkDist;
             best = i;
         }
+
+        i++;
     }
 
+    rgbDistCache.set(key, best);
+    // rgbDistCache[key] = best;
     return best;
 }
 
@@ -382,20 +416,28 @@ function hexToRgb(hex) {
 }
 
 function preprocessImage() {
-    let scaleMode = getElm("scaleMode").value;
-    let rotation = parseInt(getElm("rotateMode").value);
+    imgW = epdData[epdIndex].width;
+    imgH = epdData[epdIndex].height;
+
+    let shiftX = parseInt(getElm("imgX").value);
+    let shiftY = parseInt(getElm("imgY").value);
     let targetW = parseInt(getElm("imgW").value);
     let targetH = parseInt(getElm("imgH").value);
+    let scaleMode = getElm("scaleMode").value;
+    let rotation = parseInt(getElm("rotateMode").value);
+
     let srcW = srcImg.width;
     let srcH = srcImg.height;
 
     // rotated dimensions of the source image
     let rotW = srcW;
     let rotH = srcH;
+    let rotTargetW = targetW;
+    let rotTargetH = targetH;
 
     if (rotation === 90 || rotation === 270) {
-        rotW = srcH;
-        rotH = srcW;
+        [rotW, rotH] = [rotH, rotW];
+        [rotTargetW, rotTargetH] = [rotTargetH, rotTargetW];
     }
 
     let scale = 1;
@@ -409,10 +451,14 @@ function preprocessImage() {
 
     let drawW = srcW * scale;
     let drawH = srcH * scale;
+    let srcDrawW = srcW * Math.min(rotTargetW / drawW, 1);
+    let srcDrawH = srcH * Math.min(rotTargetH / drawH, 1);
+    drawW = Math.min(rotTargetW, drawW);
+    drawH = Math.min(rotTargetH, drawH);
 
     let canvas = document.createElement("canvas");
-    canvas.width = targetW;
-    canvas.height = targetH;
+    canvas.width = imgW;
+    canvas.height = imgH;
 
     let ctx = canvas.getContext("2d");
 
@@ -422,11 +468,16 @@ function preprocessImage() {
 
     ctx.save();
 
-    ctx.translate(targetW / 2 + shiftX, targetH / 2 + shiftY);
+    ctx.translate(imgW / 2 + shiftX, imgH / 2 + shiftY);
     ctx.rotate(rotation * Math.PI / 180);
+
 
     ctx.drawImage(
         srcImg,
+        (srcW - srcDrawW) / 2,
+        (srcH - srcDrawH) / 2,
+        srcDrawW,
+        srcDrawH,
         -drawW / 2,
         -drawH / 2,
         drawW,
@@ -438,47 +489,29 @@ function preprocessImage() {
     return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
-// SCRIPT C
 function processImg() {
-    dithering = getElm("setDithering").checked;
-    colour = getElm("setColour").checked;
+    const timeStart = performance.now();
+    cacheHits = 0;
+
     if (!srcImg) {
-        alert("Please select an image first.");
+        console.log("Process image aborted, no source image.");
         return;
     }
 
-    let paletteIndex = epdData[epdIndex].paletteIndex;
-
-    setPalette(paletteIndex);
-
-    if (colour) {
-        if (palettes[paletteIndex] === undefined || palettes[paletteIndex].length <= 2) {
-            alert("Selected display does not support colour.");
-            colour = false;
-            getElm("setColour").checked = false;
-        }
-    } else
-        if (palettes[paletteIndex] !== undefined && palettes[paletteIndex].length > 2)
-            setPalette(0);
-
-    shiftX = parseInt(getElm("imgX").value);
-    shiftY = parseInt(getElm("imgY").value);
-    imgW = parseInt(getElm("imgW").value);
-    imgH = parseInt(getElm("imgH").value);
-
     let srcImgData = preprocessImage();
-    let sW = srcImgData.width;
-    let sH = srcImgData.height;
+    let srcW = srcImgData.width;
+    let srcH = srcImgData.height;
 
-    dstColourCodesBuffer = new Uint8Array(imgW * imgH);
+    console.log(`Preprocess Duration: ${performance.now() - timeStart}ms`);
 
     if ((imgW < 3) || (imgH < 3)) {
         alert("Image is too small");
         return;
     }
 
-    getElm("dstBox").innerHTML =
-        "<div class=\"title\">Processed image</div><canvas id=\"processedImg\" class=\"img_elm\"></canvas>";
+    dstColourCodesBuffer = new Uint8Array(imgW * imgH);
+
+    getElm("processedBox").classList.remove("hidden");
     let canvasElm = getElm("processedImg");
 
     canvasElm.width = imgW;
@@ -492,19 +525,19 @@ function processImg() {
     if (!dithering) {
         let bgIndex = getNear(bgRGB[0], bgRGB[1], bgRGB[2]);
         for (let row = 0; row < imgH; row++) {
-            if ((row < 0) || (row >= sH)) {
+            if ((row < 0) || (row >= srcH)) {
                 for (let x = 0; x < imgW; x++, pixelIndex++) setColourCode(pixelIndex, bgIndex);
                 continue;
             }
 
             for (let col = 0; col < imgW; col++) {
-                if ((col < 0) || (col >= sW)) {
+                if ((col < 0) || (col >= srcW)) {
                     setColourCode(pixelIndex, bgIndex);
                     pixelIndex++;
                     continue;
                 }
 
-                let pos = (row * sW + col) * 4;
+                let pos = (row * srcW + col) * 4;
                 setColourCode(pixelIndex, getNear(srcImgData.data[pos], srcImgData.data[pos + 1], srcImgData.data[pos + 2]));
                 pixelIndex++;
             }
@@ -522,10 +555,10 @@ function processImg() {
 
             for (let col = 0; col < imgW; col++) {
                 let srcRGB = [0, 0, 0];
-                if ((col < 0) || (col >= sW) || (row < 0) || (row >= sH)) {
+                if ((col < 0) || (col >= srcW) || (row < 0) || (row >= srcH)) {
                     srcRGB = bgRGB;
                 } else {
-                    let pos = (row * sW + col) * 4;
+                    let pos = (row * srcW + col) * 4;
                     srcRGB = [
                         srcImgData.data[pos],
                         srcImgData.data[pos + 1],
@@ -541,6 +574,7 @@ function processImg() {
                 let colourIndex = getNear(newRGB[0], newRGB[1], newRGB[2]);
 
                 setColourCode(pixelIndex, colourIndex);
+
                 pixelIndex++;
 
                 let errRGB = [
@@ -568,6 +602,9 @@ function processImg() {
             }
         }
     }
+
+    console.log(`Process Duration: ${performance.now() - timeStart}ms`);
+    console.log(`Process RGB Cache Size: ${rgbDistCache.size}, Hits: ${cacheHits} (${((cacheHits / (imgW * imgH)) * 100).toFixed(2)}%)`);
 
     setTimeout(() => canvasElm.getContext("2d").putImageData(dstImgData, 0, 0), 100);
 }

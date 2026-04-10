@@ -189,7 +189,7 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       if (msg.startsWith("LOAD_")) {
         client->text("RUNNING_" + String(curClientId));
         reqIndex++;
-        Serial.printf("[WS] LOAD (%d)\n", reqIndex);
+        Serial.printf("[WS] LOAD (%d)", reqIndex);
         String dataStr = msg.substring(5);
         // Boundary check
         if (dataStr.length() > BUFF_MAX_CHUNK_SIZE) {
@@ -266,6 +266,7 @@ void EPDHandler() {
     if (EPD_dispLoad != 0) {
       EPD_dispLoad();
       EPD_Status = READY;
+      Serial.println(" - Done");
       wsSendCur("ACK_" + String(reqIndex));
     } else {
       EPD_Status = READY;
@@ -321,22 +322,11 @@ void EPDHandler() {
       Serial.println("[WARN] Failed to set wifi transmission power to 8.5dBm.");
 
     delay(2000);
-#if ACCESS_POINT
+#if !ACCESS_POINT
     Serial.printf("[WiFi] Low Power RSSI: %d\n", WiFi.RSSI());
 #endif
-
-    bool success = false;
-    uint8_t tries = 0;
-    while (tries < 3) {
-      if (!success) {
-        tries++;
-        if (tries > 1)
-          wsSendCur(("ERROR_DRF_TRY_" + String(tries)).c_str());
-      } else
-        break;
-      success = EPD_dispMass[EPD_dispIndex].show();
-      delay(1000);
-    }
+    bool success = EPD_dispMass[EPD_dispIndex].show();
+    delay(1000);
 
     // Zero power consumption
     EPD_Exit();
@@ -345,7 +335,7 @@ void EPDHandler() {
       Serial.println("[WARN] Failed to set wifi transmission power to 19dBm.");
 
     delay(1000);
-#if ACCESS_POINT
+#if !ACCESS_POINT
     Serial.printf("[WiFi] Normal Power RSSI: %d\n", WiFi.RSSI());
 #endif
 
@@ -378,6 +368,7 @@ bool WiFiAttemptConnect() {
   }
   // Connection is complete
   Serial.println("\n[WiFi] Wi-Fi connected.");
+  Serial.printf("[WiFi] RSSI: %d\n", WiFi.RSSI());
 
   return true;
 }
@@ -469,7 +460,7 @@ bool Srvr_setup() {
   Serial.print("[SERVER] IP Address: ");
   Serial.println(serverIP = WiFi.localIP());
 #endif
-  Serial.printf("[SERVER] URL: http://%s.local", baseURL);
+  Serial.printf("[SERVER] URL: http://%s.local\n", baseURL);
   Serial.print("[SERVER] Hostname: ");
   Serial.println(WiFi.getHostname());
 
@@ -489,7 +480,7 @@ void Srvr_loop() {
     lastCleanup = millis();
   }
 
-#if ACCESS_POINT == false
+#if !ACCESS_POINT
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("[WiFi] Wi-Fi Disconnected, attempting to reconnect.");
     WiFiAttemptConnect();

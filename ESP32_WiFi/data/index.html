@@ -7,16 +7,12 @@
     <title>E-Ink Image Uploader</title>
     <link rel="icon" href="data:;base64,=">
     <link rel="stylesheet" href="styles.css">
-    <!-- <script src="scriptA.js"></script>
-    <script src="scriptB.js"></script>
-    <script src="scriptC.js"></script>
-    <script src="scriptD.js"></script> -->
     <script src="script.js"></script>
 </head>
 
 <body>
-    <div id="epdSettings" class="section">
-        <div class="title">Device Settings</div>
+    <details id="epdSettings" class="section">
+        <summary class="title">Device Settings</summary>
         <div class="menu_item input_field">
             <label for="ipAddress" class="input_label">Device IP</label>
             <input id="ipAddress" class="input_elm" type="text" value="192.168.88.150">
@@ -25,8 +21,28 @@
             <label for="display" class="input_label">Display Type</label>
             <select id="displayType" class="input_elm" name="display"></select>
         </div>
-    </div>
+    </details>
+
     <div id="settings" class="section">
+        <details id="paletteSettings" class="subsection">
+            <summary class="title">Process Settings</summary>
+            <div id="bgOptions" class="menu_item input_field inline_input">
+                <label for="bgColour" class="input_label">Background Colour</label>
+                <input id="bgColour" class="colour_input input_elm" type="color" value="#FFFFFF" />
+            </div>
+            <label class="menu_item input_field inline_input">
+                <div class="input_label">Colour</div>
+                <div class="input_elm switch_input">
+                    <input id="setColour" class="knob" type="checkbox" checked="true" />
+                </div>
+            </label>
+            <label class="menu_item input_field inline_input">
+                <div class="input_label">Dithering</div>
+                <div class="input_elm switch_input">
+                    <input id="setDithering" class="knob" type="checkbox" checked="true" />
+                </div>
+            </label>
+        </details>
         <div id="imgSettings" class="subsection">
             <div class="title">Image Adjustments</div>
             <div id="position" class="short_input_wrapper menu_item">
@@ -67,25 +83,6 @@
                 </select>
             </div>
         </div>
-        <div id="paletteSettings" class="subsection">
-            <div class="title">Process Settings</div>
-            <div id="bgOptions" class="menu_item input_field inline_input">
-                <label for="bgColour" class="input_label">Background Colour</label>
-                <input id="bgColour" class="colour_input input_elm" type="color" value="#FFFFFF" />
-            </div>
-            <label class="menu_item input_field inline_input">
-                <div class="input_label">Colour</div>
-                <div class="input_elm switch_input">
-                    <input id="setColour" class="knob" type="checkbox" checked="true" />
-                </div>
-            </label>
-            <label class="menu_item input_field inline_input">
-                <div class="input_label">Dithering</div>
-                <div class="input_elm switch_input">
-                    <input id="setDithering" class="knob" type="checkbox" checked="true" />
-                </div>
-            </label>
-        </div>
     </div>
     <label for="clear" class="menu_button">
         <div class="button_label">Clear</div>
@@ -107,10 +104,14 @@
             <div class="dropbox" id="dropbox">
                 <input id="dropboxInput" type="file" accept="image/*" class="hidden_input" />
                 <label class="heading" id="dropboxHeading" for="dropboxInput">Click to add image.</label>
-                <div id="srcBox" class="img_box"></div>
+                <div id="srcBox" class="img_box hidden">
+                    <img id="imgView" class="img_elm">
+                </div>
             </div>
         </div>
-        <div id="dstBox" class="image_section"></div>
+        <div id="dstBox" class="image_section">
+            <div class="title hidden" id="processedBox">Preview</div><canvas id="processedImg" class="img_elm"></canvas>
+        </div>
     </div>
 </body>
 

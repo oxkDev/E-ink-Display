@@ -43,7 +43,7 @@ void setup() {
 
     if (!WiFi.setTxPower(WIFI_LOW_PWR))
       Serial.println("[WARN] Failed to set wifi transmission power to low power mode.");
-    delay(1000);
+    delay(2000);
     success &= EPD_13in3E_Show();
   }
 
