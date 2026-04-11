@@ -1,4 +1,4 @@
-/**
+/*
   ******************************************************************************
   * @file    srvr.h
   * @author  Waveshare Team
@@ -10,7 +10,10 @@
   *           + Uploading images from client part by part
   *
   ******************************************************************************
-  */
+*/
+
+#ifndef __SRVR_H
+#define __SRVR_H
 
 /* Includes ------------------------------------------------------------------*/
 #include <WiFi.h>
@@ -19,7 +22,7 @@
 #include <LittleFS.h>           // file system implementation
 #include <vector>
 
-#include "buff.h"  // POST request data accumulator
+// #include "buff.h"  // POST request data accumulator
 #include "epd.h"   // e-Paper driver
 
 #define ACCESS_POINT false
@@ -487,3 +490,5 @@ void Srvr_loop() {
   }
 #endif
 }
+
+#endif
