@@ -45,6 +45,11 @@ select:focus {
     outline: none;
 }
 
+select.input_elm > option {
+    background: var(--background);
+    color: var(--text);
+}
+
 #settings {
     /* max-height: max(45vh, 400px); */
     display: flex;
@@ -183,8 +188,9 @@ select:focus {
     }
 
     .knob {
-        width: calc(100% - 20px);
+        width: calc(100% - 10px);
         min-width: 30px;
+        height: calc(100% - 10px);
         border-radius: 25px;
         background: #000;
         opacity: 0.4;
@@ -198,7 +204,7 @@ select:focus {
         background: var(--text);
     }
 
-    .knob:not(:hover) {
+    &:not(:hover) .knob {
         transform: scale(0.9);
     }
 
@@ -215,12 +221,13 @@ select:focus {
         transition-delay: 100ms;
     }
 
-    &:active {
-        &:has(.knob:checked)::before,
-        &:not(:has(.knob:checked))::after {
-            transition-delay: 0ms;
-            width: 50%;
-        }
+}
+
+.input_field:active > .switch_input {
+    &:has(.knob:checked)::before,
+    &:not(:has(.knob:checked))::after {
+        transition-delay: 0ms;
+        width: 50%;
     }
 }
 

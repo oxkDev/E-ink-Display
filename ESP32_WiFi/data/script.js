@@ -65,6 +65,8 @@ const palettes = [
 ]; //5.65f 7-colour E-Paper;
 
 function setPalette(paletteIndex) {
+    rgbDistCache = {};
+
     curPaletteRGB = palettes[paletteIndex];
     curPaletteLab = curPaletteRGB.map(c => rgbToLab(c[0], c[1], c[2]));
 
@@ -87,7 +89,7 @@ let srcImg = new Image(),
     epdIndex = 50,
     curPaletteRGB = [],
     curPaletteLab = [],
-    rgbDistCache = new Map(),
+    rgbDistCache = {},
     curPaletteCodes = [],
     dstColourCodesBuffer = new Uint8Array();
 
@@ -155,8 +157,6 @@ function processInputs() {
     } else
         if (palettes[paletteIndex] !== undefined && palettes[paletteIndex].length > 2)
             setPalette(0);
-
-    rgbDistCache = new Map();
 
     processImg();
 }
@@ -239,7 +239,7 @@ function wsConnect() {
         clearTimeout(wsTimeout);
         console.log("Hardware connected.");
         if (commandQueue.length != 0 && commandQueue[queueIndex].payload.startsWith("LOAD")) {
-            console.log("Attempting Reconnection.");
+            console.log("Attempting to resume loading.");
             ws.send(`RECON_${clientId}`);
         }
     };
@@ -267,7 +267,7 @@ function wsConnect() {
         if (msg.startsWith("ACK_")) {
             const newQueueIndex = parseInt(msg.substring(4));
             if (isNaN(newQueueIndex) || newQueueIndex != queueIndex) {
-                console.error(`Unexpected queue index. Expected: ${queueIndex}, Received: ${newQueueIndex}`);
+                console.error(`Unexpected queue index: Expected ${queueIndex}, received ${newQueueIndex}`);
                 queueIndex = newQueueIndex;
             }
             advanceQueue(++queueIndex);
@@ -371,13 +371,13 @@ function getNear(r, g, b) {
 
     let key = (r << 16) | (g << 8) | b;
 
-    let best = rgbDistCache.get(key);
-    // let best = rgbDistCache[key];
+    // let best = rgbDistCache.get(key);
+    let best = rgbDistCache[key];
 
     if (best !== undefined) {
         cacheHits++;
         return best;
-    } 
+    }
 
     best = 0;
     let bestDist = Infinity;
@@ -402,8 +402,8 @@ function getNear(r, g, b) {
         i++;
     }
 
-    rgbDistCache.set(key, best);
-    // rgbDistCache[key] = best;
+    // rgbDistCache.set(key, best);
+    rgbDistCache[key] = best;
     return best;
 }
 
@@ -468,14 +468,14 @@ function preprocessImage() {
 
     ctx.save();
 
-    ctx.translate(imgW / 2 + shiftX, imgH / 2 + shiftY);
+    ctx.translate(imgW / 2, imgH / 2);
     ctx.rotate(rotation * Math.PI / 180);
 
 
     ctx.drawImage(
         srcImg,
-        (srcW - srcDrawW) / 2,
-        (srcH - srcDrawH) / 2,
+        (srcW - srcDrawW) / 2 - shiftX,
+        (srcH - srcDrawH) / 2 - shiftY,
         srcDrawW,
         srcDrawH,
         -drawW / 2,
@@ -604,7 +604,7 @@ function processImg() {
     }
 
     console.log(`Process Duration: ${performance.now() - timeStart}ms`);
-    console.log(`Process RGB Cache Size: ${rgbDistCache.size}, Hits: ${cacheHits} (${((cacheHits / (imgW * imgH)) * 100).toFixed(2)}%)`);
+    console.log(`Process RGB Cache Size: ${Object.keys(rgbDistCache).length}, Hits: ${cacheHits} (${((cacheHits / (imgW * imgH)) * 100).toFixed(2)}%)`);
 
     setTimeout(() => canvasElm.getContext("2d").putImageData(dstImgData, 0, 0), 100);
 }
@@ -626,7 +626,7 @@ function enqueueCommand(cmdData, logMsg, progress) {
 }
 
 function advanceQueue(q = 0) {
-    console.log(`Request: ${q + 1} / ${commandQueue.length}`);
+    console.log(`Request ${q} (${q + 1} / ${commandQueue.length})`);
     if (q >= commandQueue.length) {
         console.log("End...");
         isProcessing = false;

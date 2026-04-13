@@ -45,101 +45,6 @@ void GPIO_Mode(unsigned char GPIO_Pin, unsigned char Mode) {
   }
 }
 
-/* The procedure of sending a byte to e-Paper by SPI -------------------------*/
-void EPD_SendByte(byte data) {
-  // for (int i = 0; i < 8; i++) {
-  //   if ((data & 0x80) == 0) digitalWrite(PIN_SPI_DIN, GPIO_PIN_RESET);
-  //   else digitalWrite(PIN_SPI_DIN, GPIO_PIN_SET);
-
-  //   data <<= 1;
-  //   digitalWrite(PIN_SPI_SCK, GPIO_PIN_SET);
-  //   digitalWrite(PIN_SPI_SCK, GPIO_PIN_RESET);
-  // }
-
-  fspi.beginTransaction(spi_settings);
-  fspi.transfer(data);
-  fspi.endTransaction();
-}
-
-void EPD_SendByteList(std::vector<byte> dataList) {
-  fspi.beginTransaction(spi_settings);
-  for (byte data : dataList)
-    fspi.transfer(data);
-  fspi.endTransaction();
-}
-
-unsigned char DEV_SPI_ReadByte() {
-  unsigned char j = 0xff;
-  GPIO_Mode(PIN_SPI_DIN, 0);
-  digitalWrite(PIN_SPI_CS, GPIO_PIN_RESET);
-  for (int i = 0; i < 8; i++) {
-    j = j << 1;
-    if (digitalRead(PIN_SPI_DIN)) j = j | 0x01;
-    else j = j & 0xfe;
-
-    digitalWrite(PIN_SPI_SCK, GPIO_PIN_SET);
-    digitalWrite(PIN_SPI_SCK, GPIO_PIN_RESET);
-  }
-  digitalWrite(PIN_SPI_CS, GPIO_PIN_SET);
-  GPIO_Mode(PIN_SPI_DIN, 1);
-  return j;
-}
-
-/* Look-up Table Definition --------------------------------------------------*/
-byte lut_full_mono[] = {
-  0x02, 0x02, 0x01, 0x11, 0x12, 0x12, 0x22, 0x22,
-  0x66, 0x69, 0x69, 0x59, 0x58, 0x99, 0x99, 0x88,
-  0x00, 0x00, 0x00, 0x00, 0xF8, 0xB4, 0x13, 0x51,
-  0x35, 0x51, 0x51, 0x19, 0x01, 0x00
-};
-
-byte lut_partial_mono[] = {
-  0x10, 0x18, 0x18, 0x08, 0x18, 0x18, 0x08, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x13, 0x14, 0x44, 0x12,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-byte lut_vcom0[] = { 15, 0x0E, 0x14, 0x01, 0x0A, 0x06, 0x04, 0x0A, 0x0A, 0x0F, 0x03, 0x03, 0x0C, 0x06, 0x0A, 0x00 };
-byte lut_w[] = { 15, 0x0E, 0x14, 0x01, 0x0A, 0x46, 0x04, 0x8A, 0x4A, 0x0F, 0x83, 0x43, 0x0C, 0x86, 0x0A, 0x04 };
-byte lut_b[] = { 15, 0x0E, 0x14, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A, 0x0F, 0x83, 0x43, 0x0C, 0x06, 0x4A, 0x04 };
-byte lut_g1[] = { 15, 0x8E, 0x94, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A, 0x0F, 0x83, 0x43, 0x0C, 0x06, 0x0A, 0x04 };
-byte lut_g2[] = { 15, 0x8E, 0x94, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A, 0x0F, 0x83, 0x43, 0x0C, 0x06, 0x0A, 0x04 };
-byte lut_vcom1[] = { 15, 0x03, 0x1D, 0x01, 0x01, 0x08, 0x23, 0x37, 0x37, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-byte lut_red0[] = { 15, 0x83, 0x5D, 0x01, 0x81, 0x48, 0x23, 0x77, 0x77, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-byte lut_red1[] = { 15, 0x03, 0x1D, 0x01, 0x01, 0x08, 0x23, 0x37, 0x37, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-/* Sending a byte as a command -----------------------------------------------*/
-void EPD_SendCommand(byte command) {
-  digitalWrite(PIN_SPI_DC, LOW);
-  digitalWrite(PIN_SPI_CS, GPIO_PIN_RESET);
-  EPD_SendByte(command);
-  digitalWrite(PIN_SPI_CS, GPIO_PIN_SET);
-}
-
-void EPD_SendCommand_13in3E6(byte command) {
-  digitalWrite(PIN_SPI_DC, LOW);
-  EPD_SendByte(command);
-}
-
-/* Sending a byte as a data --------------------------------------------------*/
-void EPD_SendData(byte data) {
-  digitalWrite(PIN_SPI_DC, HIGH);
-  digitalWrite(PIN_SPI_CS, GPIO_PIN_RESET);
-  EPD_SendByte(data);
-  digitalWrite(PIN_SPI_CS, GPIO_PIN_SET);
-}
-
-void EPD_SendData_13in3E6(byte data) {
-  digitalWrite(PIN_SPI_DC, HIGH);
-  EPD_SendByte(data);
-}
-
-void EPD_SendDataList_13in3E6(std::vector<byte> dataList) {
-  digitalWrite(PIN_SPI_DC, HIGH);
-  EPD_SendByteList(dataList);
-}
-
 /* Waiting the e-Paper is ready for further instructions ---------------------*/
 bool EPD_WaitUntilIdle(uint8_t timeout, uint8_t min) {
   //0: busy, 1: idle
@@ -186,6 +91,124 @@ bool EPD_WaitUntilIdle_high(uint8_t timeout, uint8_t min) {
   return true;
 }
 
+/* Wake EPD from deep sleep mode ---------------------------------------------*/
+bool EPD_Reset() {
+  bool success = false;
+  int resetTries = 0;
+  while (!success) {
+    digitalWrite(PIN_SPI_RST, LOW);
+    digitalWrite(PIN_SPI_CS, HIGH);
+    digitalWrite(PIN_SPI_CS_S, HIGH);
+    digitalWrite(PIN_SPI_SCK, LOW);
+    digitalWrite(PIN_SPI_PWR, HIGH);
+    delay(200);
+    digitalWrite(PIN_SPI_RST, HIGH);
+    delay(200);
+    digitalWrite(PIN_SPI_RST, LOW);
+    delay(5);
+    digitalWrite(PIN_SPI_RST, HIGH);
+    // delay(200);
+    // digitalWrite(PIN_SPI_RST, LOW);
+    // delay(2);
+    // digitalWrite(PIN_SPI_RST, HIGH);
+    // delay(200);
+    success = EPD_WaitUntilIdle();
+    resetTries++;
+    if (resetTries >= 3) {
+      Serial.println("\n[ERROR] Reset failed.");
+      return false;
+    }
+    if (!success) {
+      EPD_Exit();
+      delay(5000);
+    }
+  }
+
+  return true;
+}
+
+/* Exit and Power down EPD ---------------------------------------------------*/
+void EPD_Exit() {
+  Serial.println("[EPD] HAT+ Power Off.");
+  delay(300);
+  digitalWrite(PIN_SPI_RST, LOW);
+  digitalWrite(PIN_SPI_DIN, LOW);
+  digitalWrite(PIN_SPI_SCK, LOW);
+  delay(100);
+  digitalWrite(PIN_SPI_PWR, LOW);
+}
+
+/* The procedure of sending a byte to e-Paper by SPI -------------------------*/
+void EPD_SendByte(byte data) {
+  // for (int i = 0; i < 8; i++) {
+  //   if ((data & 0x80) == 0) digitalWrite(PIN_SPI_DIN, GPIO_PIN_RESET);
+  //   else digitalWrite(PIN_SPI_DIN, GPIO_PIN_SET);
+
+  //   data <<= 1;
+  //   digitalWrite(PIN_SPI_SCK, GPIO_PIN_SET);
+  //   digitalWrite(PIN_SPI_SCK, GPIO_PIN_RESET);
+  // }
+
+  fspi.beginTransaction(spi_settings);
+  fspi.transfer(data);
+  fspi.endTransaction();
+}
+
+void EPD_SendByteList(std::vector<byte> dataList) {
+  fspi.beginTransaction(spi_settings);
+  for (byte data : dataList)
+    fspi.transfer(data);
+  fspi.endTransaction();
+}
+
+unsigned char DEV_SPI_ReadByte() {
+  unsigned char j = 0xff;
+  GPIO_Mode(PIN_SPI_DIN, 0);
+  digitalWrite(PIN_SPI_CS, GPIO_PIN_RESET);
+  for (int i = 0; i < 8; i++) {
+    j = j << 1;
+    if (digitalRead(PIN_SPI_DIN)) j = j | 0x01;
+    else j = j & 0xfe;
+
+    digitalWrite(PIN_SPI_SCK, GPIO_PIN_SET);
+    digitalWrite(PIN_SPI_SCK, GPIO_PIN_RESET);
+  }
+  digitalWrite(PIN_SPI_CS, GPIO_PIN_SET);
+  GPIO_Mode(PIN_SPI_DIN, 1);
+  return j;
+}
+
+/* Sending a byte as a command -----------------------------------------------*/
+void EPD_SendCommand(byte command) {
+  digitalWrite(PIN_SPI_DC, LOW);
+  digitalWrite(PIN_SPI_CS, GPIO_PIN_RESET);
+  EPD_SendByte(command);
+  digitalWrite(PIN_SPI_CS, GPIO_PIN_SET);
+}
+
+void EPD_SendCommand_13in3E6(byte command) {
+  digitalWrite(PIN_SPI_DC, LOW);
+  EPD_SendByte(command);
+}
+
+/* Sending a byte as a data --------------------------------------------------*/
+void EPD_SendData(byte data) {
+  digitalWrite(PIN_SPI_DC, HIGH);
+  digitalWrite(PIN_SPI_CS, GPIO_PIN_RESET);
+  EPD_SendByte(data);
+  digitalWrite(PIN_SPI_CS, GPIO_PIN_SET);
+}
+
+void EPD_SendData_13in3E6(byte data) {
+  digitalWrite(PIN_SPI_DC, HIGH);
+  EPD_SendByte(data);
+}
+
+void EPD_SendDataList_13in3E6(std::vector<byte> dataList) {
+  digitalWrite(PIN_SPI_DC, HIGH);
+  EPD_SendByteList(dataList);
+}
+
 /* Send a one-argument command -----------------------------------------------*/
 void EPD_Send_1(byte c, byte v1) {
   EPD_SendCommand(c);
@@ -226,72 +249,84 @@ void EPD_Send_5(byte c, byte v1, byte v2, byte v3, byte v4, byte v5) {
   EPD_SendData(v5);
 }
 
-/* Writting lut-data into the e-Paper ----------------------------------------*/
-void EPD_lut(byte c, byte l, byte* p) {
-  // lut-data writting initialization
-  EPD_SendCommand(c);
-
-  // lut-data writting doing
-  for (int i = 0; i < l; i++, p++) EPD_SendData(*p);
-}
-
-/* Writting lut-data of the black-white channel ------------------------------*/
-void EPD_SetLutBw(byte* c20, byte* c21, byte* c22, byte* c23, byte* c24) {
-  EPD_lut(0x20, *c20, c20 + 1);  //g vcom
-  EPD_lut(0x21, *c21, c21 + 1);  //g ww --
-  EPD_lut(0x22, *c22, c22 + 1);  //g bw r
-  EPD_lut(0x23, *c23, c23 + 1);  //g wb w
-  EPD_lut(0x24, *c24, c24 + 1);  //g bb b
-}
-
-/* Writting lut-data of the red channel --------------------------------------*/
-void EPD_SetLutRed(byte* c25, byte* c26, byte* c27) {
-  EPD_lut(0x25, *c25, c25 + 1);
-  EPD_lut(0x26, *c26, c26 + 1);
-  EPD_lut(0x27, *c27, c27 + 1);
-}
-
-/* Wake EPD from deep sleep mode ---------------------------------------------*/
-bool EPD_Reset() {
-  bool success = false;
-  int resetTries = 0;
-  while (!success) {
-    digitalWrite(PIN_SPI_RST, LOW);
-    digitalWrite(PIN_SPI_CS, HIGH);
-    digitalWrite(PIN_SPI_CS_S, HIGH);
-    digitalWrite(PIN_SPI_SCK, LOW);
-    digitalWrite(PIN_SPI_PWR, HIGH);
-    delay(200);
-    digitalWrite(PIN_SPI_RST, HIGH);
-    delay(200);
-    digitalWrite(PIN_SPI_RST, LOW);
-    delay(5);
-    digitalWrite(PIN_SPI_RST, HIGH);
-    // delay(200);
-    // digitalWrite(PIN_SPI_RST, LOW);
-    // delay(2);
-    // digitalWrite(PIN_SPI_RST, HIGH);
-    // delay(200);
-    success = EPD_WaitUntilIdle();
-    resetTries++;
-    if (resetTries >= 3) {
-      Serial.println("\n[ERROR] Reset failed.");
-      return false;
-    }
-    if (!success) {
-      EPD_Exit();
-      delay(5000);
-    }
-  }
-
-  return true;
-}
+/* Array of sets describing the usage of e-Papers ----------------------------*/
+EPD_dispInfo EPD_dispMass[] = {
+  { EPD_Init_1in54, EPD_loadA, -1, 0, EPD_1IN54_Show, "1.54 inch" },                             // a 0
+  { EPD_Init_1in54b, EPD_loadB, 0x13, EPD_loadA, EPD_showB, "1.54 inch b" },                     // b 1
+  { EPD_Init_1in54c, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "1.54 inch c" },                     // c 2
+  { EPD_Init_2in13, EPD_loadC, -1, 0, EPD_showA, "2.13 inch" },                                  // d 3
+  { EPD_Init_2in13b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.13 inch b" },                     // e 4
+  { EPD_Init_2in13b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.13 inch c" },                     // f 5
+  { EPD_Init_2in13d, EPD_loadA, -1, 0, EPD_showD, "2.13 inch d" },                               // g 6
+  { EPD_Init_2in7, EPD_loadA, 1, 0, EPD_showB, "2.7 inch" },                                     // h 7
+  { EPD_Init_2in7b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.7 inch b" },                       // i 8
+  { EPD_Init_2in9, EPD_loadA, -1, 0, EPD_showA, "2.9 inch" },                                    // j 9
+  { EPD_Init_2in9b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.9 inch b" },                       // k 10
+  { EPD_Init_2in9b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.9 inch c" },                       // l 11
+  { EPD_Init_2in9d, EPD_loadA, -1, 0, EPD_2IN9D_Show, "2.9 inch d" },                            // M 12
+  { EPD_Init_4in2, EPD_loadA, -1, 0, EPD_showB, "4.2 inch" },                                    // N 13
+  { EPD_Init_4in2b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "4.2 inch b" },                       // O 14
+  { EPD_Init_4in2b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "4.2 inch c" },                       // P 15
+  { EPD_5in83__init, EPD_loadD, -1, 0, EPD_showC, "5.83 inch" },                                 // Q 16
+  { EPD_5in83b__init, EPD_loadE, -1, 0, EPD_showC, "5.83 inch b" },                              // R 17
+  { EPD_5in83b__init, EPD_loadE, -1, 0, EPD_showC, "5.83 inch c" },                              // S 18
+  { EPD_7in5__init, EPD_loadD, -1, 0, EPD_showC, "7.5 inch" },                                   // T 19
+  { EPD_7in5__init, EPD_loadE, -1, 0, EPD_showC, "7.5 inch b" },                                 // u 20
+  { EPD_7in5__init, EPD_loadE, -1, 0, EPD_showC, "7.5 inch c" },                                 // v 21
+  { EPD_7in5_V2_init, EPD_loadAFilp, -1, 0, EPD_7IN5_V2_Show, "7.5 inch V2" },                   // w 22
+  { EPD_7in5B_V2_Init, EPD_loadA, 0x13, EPD_loadAFilp, EPD_7IN5_V2_Show, "7.5 inch B V2" },      // x 23
+  { EPD_7IN5B_HD_init, EPD_loadA, 0x26, EPD_loadAFilp, EPD_7IN5B_HD_Show, "7.5 inch B HD" },     // y 24
+  { EPD_5IN65F_init, EPD_loadG, -1, 0, EPD_5IN65F_Show, "5.65 inch F " },                        // z 25
+  { EPD_7IN5_HD_init, EPD_loadA, -1, 0, EPD_7IN5_HD_Show, "7.5 inch HD" },                       // A 26
+  { EPD_3IN7_1Gray_Init, EPD_loadA, -1, 0, EPD_3IN7_1Gray_Show, "3.7 inch" },                    // 27
+  { EPD_2IN66_Init, EPD_loadA, -1, 0, EPD_2IN66_Show, "2.66 inch" },                             // 28
+  { EPD_5in83b_V2_init, EPD_loadA, 0x13, EPD_loadAFilp, EPD_showC, "5.83 inch B V2" },           // 29
+  { EPD_Init_2in9b_V3, EPD_loadA, 0x13, EPD_loadA, EPD_showC, "2.9 inch B V3" },                 // 30
+  { EPD_1IN54B_V2_Init, EPD_loadA, 0x26, EPD_loadAFilp, EPD_1IN54B_V2_Show, "1.54 inch B V2" },  // 31
+  { EPD_2IN13B_V3_Init, EPD_loadA, 0x13, EPD_loadA, EPD_2IN13B_V3_Show, "2.13 inch B V3" },      // 32
+  { EPD_Init_2in9_V2, EPD_loadA, -1, 0, EPD_2IN9_V2_Show, "2.9 inch V2" },                       // 33
+  { EPD_Init_4in2b_V2, EPD_loadA, -1, EPD_4IN2B_V2_load, EPD_4IN2B_V2_Show, "4.2 inch b V2" },   // 34
+  { EPD_2IN66B_Init, EPD_loadA, 0x26, EPD_loadAFilp, EPD_2IN66_Show, "2.66 inch b" },            // 35
+  { EPD_Init_5in83_V2, EPD_loadAFilp, -1, 0, EPD_showC, "5.83 inch V2" },                        // 36
+  { EPD_4IN01F_init, EPD_loadG, -1, 0, EPD_4IN01F_Show, "4.01 inch f" },                         // 37
+  { EPD_Init_2in7b_V2, EPD_loadA, 0x26, EPD_loadAFilp, EPD_Show_2in7b_V2, "2.7 inch B V2" },     // 38
+  { EPD_Init_2in13_V3, EPD_loadC, -1, 0, EPD_2IN13_V3_Show, "2.13 inch V3" },                    // 39
+  { EPD_2IN13B_V4_Init, EPD_loadA, 0x26, EPD_loadA, EPD_2IN13B_V4_Show, "2.13 inch B V4" },      // 40
+  { EPD_3IN52_Init, EPD_loadA, -1, 0, EPD_3IN52_Show, "3.52 inch" },                             // 41
+  { EPD_2IN7_V2_Init, EPD_loadA, -1, 0, EPD_2IN7_V2_Show, "2.7 inch V2" },                       // 42
+  { EPD_Init_2in13_V4, EPD_loadC, -1, 0, EPD_2IN13_V4_Show, "2.13 inch V4" },                    // 43
+  { EPD_Init_4in2_V2, EPD_loadA, -1, 0, EPD_4IN2_V2_Show, "4.2 inch V2" },                       // 44
+  { EPD_13in3k_init, EPD_loadA, -1, 0, EPD_13in3k_Show, "13.3 inch K" },                         // 45
+  { EPD_4in26_init, EPD_loadA, -1, 0, EPD_4in26_Show, "4.26 inch" },                             // 46
+  { EPD_Init_2in9b_V4, EPD_loadA, 0x26, EPD_loadAFilp, EPD_2in9b_V4_Show, "2.9 inch b V4" },     // 47
+  { EPD_13in3b_init, EPD_loadA, 0x26, EPD_loadAFilp, EPD_13in3b_Show, "13.3 inch b" },           // 48
+  { EPD_7in3E_init, EPD_loadG, -1, 0, EPD_7in3E_Show, "7.3 inch E" },                            // 49
+  { EPD_13in3E_init, EPD_load_13in3E6, -1, EPD_load_13in3E6, EPD_13in3E_Show, "13.3 inch E" },   // 50
+};
 
 /* e-Paper initialization functions ------------------------------------------*/
 bool EPD_invert;           // If true, then image data bits must be inverted
 int EPD_dispIndex = 50;    // The index of the e-Paper's type
 int EPD_dispX, EPD_dispY;  // Current pixel's coordinates (for 2.13 only)
 void (*EPD_dispLoad)();    // Pointer on a image data writting function
+
+/* Initialization of an e-Paper ----------------------------------------------*/
+bool EPD_dispInit() {
+  // Call initialization function
+  bool success = EPD_dispMass[EPD_dispIndex].init() == 0;
+
+  // Set loading function for black channel
+  EPD_dispLoad = EPD_dispMass[EPD_dispIndex].loadBlk;
+
+  // Set initial coordinates
+  EPD_dispX = 0;
+  EPD_dispY = 0;
+
+  // The inversion of image data bits isn't needed by default
+  EPD_invert = false;
+
+  return success;
+}
 
 /* Image data loading function for a-type e-Paper ----------------------------*/
 void EPD_loadA() {
@@ -617,88 +652,53 @@ bool EPD_showD() {
   return true;
 }
 
-/* Array of sets describing the usage of e-Papers ----------------------------*/
-EPD_dispInfo EPD_dispMass[] = {
-  { EPD_Init_1in54, EPD_loadA, -1, 0, EPD_1IN54_Show, "1.54 inch" },                             // a 0
-  { EPD_Init_1in54b, EPD_loadB, 0x13, EPD_loadA, EPD_showB, "1.54 inch b" },                     // b 1
-  { EPD_Init_1in54c, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "1.54 inch c" },                     // c 2
-  { EPD_Init_2in13, EPD_loadC, -1, 0, EPD_showA, "2.13 inch" },                                  // d 3
-  { EPD_Init_2in13b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.13 inch b" },                     // e 4
-  { EPD_Init_2in13b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.13 inch c" },                     // f 5
-  { EPD_Init_2in13d, EPD_loadA, -1, 0, EPD_showD, "2.13 inch d" },                               // g 6
-  { EPD_Init_2in7, EPD_loadA, 1, 0, EPD_showB, "2.7 inch" },                                     // h 7
-  { EPD_Init_2in7b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.7 inch b" },                       // i 8
-  { EPD_Init_2in9, EPD_loadA, -1, 0, EPD_showA, "2.9 inch" },                                    // j 9
-  { EPD_Init_2in9b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.9 inch b" },                       // k 10
-  { EPD_Init_2in9b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "2.9 inch c" },                       // l 11
-  { EPD_Init_2in9d, EPD_loadA, -1, 0, EPD_2IN9D_Show, "2.9 inch d" },                            // M 12
-  { EPD_Init_4in2, EPD_loadA, -1, 0, EPD_showB, "4.2 inch" },                                    // N 13
-  { EPD_Init_4in2b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "4.2 inch b" },                       // O 14
-  { EPD_Init_4in2b, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "4.2 inch c" },                       // P 15
-  { EPD_5in83__init, EPD_loadD, -1, 0, EPD_showC, "5.83 inch" },                                 // Q 16
-  { EPD_5in83b__init, EPD_loadE, -1, 0, EPD_showC, "5.83 inch b" },                              // R 17
-  { EPD_5in83b__init, EPD_loadE, -1, 0, EPD_showC, "5.83 inch c" },                              // S 18
-  { EPD_7in5__init, EPD_loadD, -1, 0, EPD_showC, "7.5 inch" },                                   // T 19
-  { EPD_7in5__init, EPD_loadE, -1, 0, EPD_showC, "7.5 inch b" },                                 // u 20
-  { EPD_7in5__init, EPD_loadE, -1, 0, EPD_showC, "7.5 inch c" },                                 // v 21
-  { EPD_7in5_V2_init, EPD_loadAFilp, -1, 0, EPD_7IN5_V2_Show, "7.5 inch V2" },                   // w 22
-  { EPD_7in5B_V2_Init, EPD_loadA, 0x13, EPD_loadAFilp, EPD_7IN5_V2_Show, "7.5 inch B V2" },      // x 23
-  { EPD_7IN5B_HD_init, EPD_loadA, 0x26, EPD_loadAFilp, EPD_7IN5B_HD_Show, "7.5 inch B HD" },     // y 24
-  { EPD_5IN65F_init, EPD_loadG, -1, 0, EPD_5IN65F_Show, "5.65 inch F " },                        // z 25
-  { EPD_7IN5_HD_init, EPD_loadA, -1, 0, EPD_7IN5_HD_Show, "7.5 inch HD" },                       // A 26
-  { EPD_3IN7_1Gray_Init, EPD_loadA, -1, 0, EPD_3IN7_1Gray_Show, "3.7 inch" },                    // 27
-  { EPD_2IN66_Init, EPD_loadA, -1, 0, EPD_2IN66_Show, "2.66 inch" },                             // 28
-  { EPD_5in83b_V2_init, EPD_loadA, 0x13, EPD_loadAFilp, EPD_showC, "5.83 inch B V2" },           // 29
-  { EPD_Init_2in9b_V3, EPD_loadA, 0x13, EPD_loadA, EPD_showC, "2.9 inch B V3" },                 // 30
-  { EPD_1IN54B_V2_Init, EPD_loadA, 0x26, EPD_loadAFilp, EPD_1IN54B_V2_Show, "1.54 inch B V2" },  // 31
-  { EPD_2IN13B_V3_Init, EPD_loadA, 0x13, EPD_loadA, EPD_2IN13B_V3_Show, "2.13 inch B V3" },      // 32
-  { EPD_Init_2in9_V2, EPD_loadA, -1, 0, EPD_2IN9_V2_Show, "2.9 inch V2" },                       // 33
-  { EPD_Init_4in2b_V2, EPD_loadA, -1, EPD_4IN2B_V2_load, EPD_4IN2B_V2_Show, "4.2 inch b V2" },   // 34
-  { EPD_2IN66B_Init, EPD_loadA, 0x26, EPD_loadAFilp, EPD_2IN66_Show, "2.66 inch b" },            // 35
-  { EPD_Init_5in83_V2, EPD_loadAFilp, -1, 0, EPD_showC, "5.83 inch V2" },                        // 36
-  { EPD_4IN01F_init, EPD_loadG, -1, 0, EPD_4IN01F_Show, "4.01 inch f" },                         // 37
-  { EPD_Init_2in7b_V2, EPD_loadA, 0x26, EPD_loadAFilp, EPD_Show_2in7b_V2, "2.7 inch B V2" },     // 38
-  { EPD_Init_2in13_V3, EPD_loadC, -1, 0, EPD_2IN13_V3_Show, "2.13 inch V3" },                    // 39
-  { EPD_2IN13B_V4_Init, EPD_loadA, 0x26, EPD_loadA, EPD_2IN13B_V4_Show, "2.13 inch B V4" },      // 40
-  { EPD_3IN52_Init, EPD_loadA, -1, 0, EPD_3IN52_Show, "3.52 inch" },                             // 41
-  { EPD_2IN7_V2_Init, EPD_loadA, -1, 0, EPD_2IN7_V2_Show, "2.7 inch V2" },                       // 42
-  { EPD_Init_2in13_V4, EPD_loadC, -1, 0, EPD_2IN13_V4_Show, "2.13 inch V4" },                    // 43
-  { EPD_Init_4in2_V2, EPD_loadA, -1, 0, EPD_4IN2_V2_Show, "4.2 inch V2" },                       // 44
-  { EPD_13in3k_init, EPD_loadA, -1, 0, EPD_13in3k_Show, "13.3 inch K" },                         // 45
-  { EPD_4in26_init, EPD_loadA, -1, 0, EPD_4in26_Show, "4.26 inch" },                             // 46
-  { EPD_Init_2in9b_V4, EPD_loadA, 0x26, EPD_loadAFilp, EPD_2in9b_V4_Show, "2.9 inch b V4" },     // 47
-  { EPD_13in3b_init, EPD_loadA, 0x26, EPD_loadAFilp, EPD_13in3b_Show, "13.3 inch b" },           // 48
-  { EPD_7in3E_init, EPD_loadG, -1, 0, EPD_7in3E_Show, "7.3 inch E" },                            // 49
-  { EPD_13in3E_init, EPD_load_13in3E6, -1, EPD_load_13in3E6, EPD_13in3E_Show, "13.3 inch E" },   // 50
+/* Look-up Table Definition --------------------------------------------------*/
+byte lut_full_mono[] = {
+  0x02, 0x02, 0x01, 0x11, 0x12, 0x12, 0x22, 0x22,
+  0x66, 0x69, 0x69, 0x59, 0x58, 0x99, 0x99, 0x88,
+  0x00, 0x00, 0x00, 0x00, 0xF8, 0xB4, 0x13, 0x51,
+  0x35, 0x51, 0x51, 0x19, 0x01, 0x00
 };
 
-/* Initialization of an e-Paper ----------------------------------------------*/
-bool EPD_dispInit() {
-  // Call initialization function
-  bool success = EPD_dispMass[EPD_dispIndex].init() == 0;
+byte lut_partial_mono[] = {
+  0x10, 0x18, 0x18, 0x08, 0x18, 0x18, 0x08, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x13, 0x14, 0x44, 0x12,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
 
-  // Set loading function for black channel
-  EPD_dispLoad = EPD_dispMass[EPD_dispIndex].loadBlk;
+byte lut_vcom0[] = { 15, 0x0E, 0x14, 0x01, 0x0A, 0x06, 0x04, 0x0A, 0x0A, 0x0F, 0x03, 0x03, 0x0C, 0x06, 0x0A, 0x00 };
+byte lut_w[] = { 15, 0x0E, 0x14, 0x01, 0x0A, 0x46, 0x04, 0x8A, 0x4A, 0x0F, 0x83, 0x43, 0x0C, 0x86, 0x0A, 0x04 };
+byte lut_b[] = { 15, 0x0E, 0x14, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A, 0x0F, 0x83, 0x43, 0x0C, 0x06, 0x4A, 0x04 };
+byte lut_g1[] = { 15, 0x8E, 0x94, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A, 0x0F, 0x83, 0x43, 0x0C, 0x06, 0x0A, 0x04 };
+byte lut_g2[] = { 15, 0x8E, 0x94, 0x01, 0x8A, 0x06, 0x04, 0x8A, 0x4A, 0x0F, 0x83, 0x43, 0x0C, 0x06, 0x0A, 0x04 };
+byte lut_vcom1[] = { 15, 0x03, 0x1D, 0x01, 0x01, 0x08, 0x23, 0x37, 0x37, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+byte lut_red0[] = { 15, 0x83, 0x5D, 0x01, 0x81, 0x48, 0x23, 0x77, 0x77, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+byte lut_red1[] = { 15, 0x03, 0x1D, 0x01, 0x01, 0x08, 0x23, 0x37, 0x37, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-  // Set initial coordinates
-  EPD_dispX = 0;
-  EPD_dispY = 0;
+/* Writting lut-data into the e-Paper ----------------------------------------*/
+void EPD_lut(byte c, byte l, byte* p) {
+  // lut-data writting initialization
+  EPD_SendCommand(c);
 
-  // The inversion of image data bits isn't needed by default
-  EPD_invert = false;
-
-  return success;
+  // lut-data writting doing
+  for (int i = 0; i < l; i++, p++) EPD_SendData(*p);
 }
 
-/* Exit and Power down EPD ---------------------------------------------------*/
-void EPD_Exit() {
-  Serial.println("[EPD] HAT+ Power Off.");
-  delay(300);
-  digitalWrite(PIN_SPI_RST, LOW);
-  digitalWrite(PIN_SPI_DIN, LOW);
-  digitalWrite(PIN_SPI_SCK, LOW);
-  delay(100);
-  digitalWrite(PIN_SPI_PWR, LOW);
+/* Writting lut-data of the black-white channel ------------------------------*/
+void EPD_SetLutBw(byte* c20, byte* c21, byte* c22, byte* c23, byte* c24) {
+  EPD_lut(0x20, *c20, c20 + 1);  //g vcom
+  EPD_lut(0x21, *c21, c21 + 1);  //g ww --
+  EPD_lut(0x22, *c22, c22 + 1);  //g bw r
+  EPD_lut(0x23, *c23, c23 + 1);  //g wb w
+  EPD_lut(0x24, *c24, c24 + 1);  //g bb b
+}
+
+/* Writting lut-data of the red channel --------------------------------------*/
+void EPD_SetLutRed(byte* c25, byte* c26, byte* c27) {
+  EPD_lut(0x25, *c25, c25 + 1);
+  EPD_lut(0x26, *c26, c26 + 1);
+  EPD_lut(0x27, *c27, c27 + 1);
 }
 
 #endif

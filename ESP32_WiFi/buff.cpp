@@ -20,22 +20,46 @@
 /* Size, current position index and byte array of the buffer -----------------*/
 int Buff_msgIndex;
 char Buff_message[BUFF_MAX_CHUNK_SIZE + 100];
+char* Buff_image = nullptr;
+bool Buff_hasPsram = false;
+bool Buff_usePsram = false;
+int Buff_psramSize;
+
+/* Initialise memory for buff image ------------------------------------------*/
+void Buff_init(void) {
+  if (Buff_hasPsram = psramInit()) {
+    Serial.println("[BUFF] PSRAM initialised.");
+    Serial.printf("[BUFF] Heap:  %d / %d used\n", ESP.getFreeHeap(), ESP.getHeapSize());
+    Serial.printf("[BUFF] Psram: %d / %d used\n", ESP.getFreePsram(), Buff_psramSize = ESP.getPsramSize());
+  } else
+    Serial.println("[BUFF] PSRAM not available.");
+}
+
+/* Allocate PSRAM for buff image ---------------------------------------------*/
+bool Buff_allocPsram(int size) {
+  if (!Buff_hasPsram || size < Buff_psramSize)
+    return Buff_usePsram = false;
+
+  Buff_image = (char*)ps_malloc(size);
+}
+
+/* Allocate PSRAM for buff image ---------------------------------------------*/
+void Buff_freePsram() {
+  free(Buff_image);
+}
 
 /* Reads a word from the buffer at specified position ------------------------*/
 int Buff_getByte(int index) {
   // The first and second characters of the byte stored in the buffer
-  // are supposed to be in range ['a'; 'p'], otherwise it isn't a image data's
-  // byte
+  // are supposed to be in range ['a'; 'p'], otherwise it isn't a image data's byte
   if ((Buff_message[index] < 'a') || (Buff_message[index] > 'p'))
     return -1;
   if ((Buff_message[index + 1] < 'a') || (Buff_message[index + 1] > 'p'))
     return -1;
 
   // The character 'a' means 0, the character 'p' means 15 consequently,
-  // The 1st character describes 4 low bits if the byte and the 2nd one - 4 high
-  // bits
-  return ((int)Buff_message[index] - 'a') +
-         (((int)Buff_message[index + 1] - 'a') << 4);
+  // The 1st character describes 4 low bits if the byte and the 2nd one - 4 high bits
+  return ((int)Buff_message[index] - 'a') + (((int)Buff_message[index + 1] - 'a') << 4);
 }
 
 /* Reads a byte from the buffer at specified position ------------------------*/
@@ -59,7 +83,7 @@ int Buff_getWord(int index) {
 }
 
 /* Checks if the buffer's data ends with specified string --------------------*/
-int Buff_checkCommand(int startIndex, char *str) {
+int Buff_checkCommand(int startIndex, char* str) {
   // characters of the string to the end of the string
   while (*str != 0) {
     // If the correspondent character in the buffer isn't equal
