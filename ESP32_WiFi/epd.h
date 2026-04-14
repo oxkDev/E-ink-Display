@@ -140,6 +140,8 @@ void EPD_loadF(void);         // 5.83b e-Paper
 void EPD_loadG(void);         // 5.65f e-Paper
 void EPD_load_13in3E6(void);  // 13.3 e-paper
 
+void EPD_load_psram_13in3E6(void);
+
 /* Image Data showing --------------------------------------------------------*/
 bool EPD_showA(void);  // Show Sequence (a-type, 4.2 and 2.7 e-Paper)
 bool EPD_showB(void);  // Show Sequence (b-type, e-Paper)

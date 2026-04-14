@@ -98,16 +98,16 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
   }
 
   if (type == WS_EVT_DATA) {
+    if (len > BUFF_MAX_CHUNK_SIZE) {
+      Serial.printf("[ERROR] Incoming chunk exceeds buffer size: %d > %d\n", len, BUFF_MAX_CHUNK_SIZE);
+      client->text("ERROR_BUFFER_OVERFLOW");
+      return;  // Abort processing
+    }
+
     AwsFrameInfo *info = (AwsFrameInfo *)arg;
 
     // Ensure we are processing a complete text frame
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-      if (len > BUFF_MAX_CHUNK_SIZE) {
-        Serial.println("[ERROR] Incoming chunk exceeds buffer size!");
-        client->text("ERROR_BUFFER_OVERFLOW");
-        return;  // Abort processing
-      }
-
       String msg = String((char *)data, len);
 
       if (msg.startsWith("RECON_")) {
@@ -156,6 +156,13 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
         wsSendAll("BUSY");
         // Getting of e-Paper's type
         EPD_dispIndex = msg.substring(5).toInt();
+
+        if (EPD_dispIndex < 0 || EPD_dispIndex > 50) {
+          wsSendCur("ERROR_UNKNOWN_DISPLAY");
+          curClientId = 0;
+          return;
+        }
+
         EPD_Status = INIT;
 
         Serial.printf("[WS] Init EPD %d: %s\n", EPD_dispIndex, EPD_dispMass[EPD_dispIndex].title);
@@ -223,6 +230,16 @@ void EPDHandler() {
   }
 
   if (EPD_Status == INIT) {
+    if (EPD_dispIndex == 50 && Buff_hasPsram) {
+      Buff_allocPsram(1600 * 1200 / 2);
+      Serial.printf("[BUFF] Allocate PSRAM: %s\n", Buff_usePsram ? "Success" : "Failed");
+      if (Buff_usePsram) {
+        Serial.println("[BUFF] Skipping initialisation.");
+        EPD_Status = READY;
+        wsSendCur("ACK_" + String(reqIndex));
+        return;
+      }
+    }
     // Initialization
     bool success = EPD_dispInit();
     delay(500);
@@ -264,13 +281,13 @@ void EPDHandler() {
         nextCode = 0x26;
       else
         nextCode = 0x13;
-    } else if (EPD_dispIndex == 50) {
+    } else if (EPD_dispIndex == 50 && !Buff_usePsram) {
       EPD_CS_ALL(1);
       digitalWrite(PIN_SPI_CS_S, 0);
       EPD_SendCommand_13in3E6(0x10);
     }
 
-    if (nextCode != -1) {  // Skip normal send command with -1.
+    if (nextCode != -1) {  // Skip if -1, else send set "next" command code.
       EPD_SendCommand(nextCode);
       delay(2);
     }
@@ -299,6 +316,23 @@ void EPDHandler() {
   }
 
   if (EPD_Status == SHOW) {
+    if (EPD_dispIndex == 50 && Buff_usePsram) {
+      wsSendCur("INIT");
+      bool success = EPD_dispInit();
+      delay(500);
+      if (success) {
+        wsSendCur("PSRAM_LOADING");
+        EPD_load_psram_13in3E6();
+        delay(500);
+        wsSendCur("SHOW");
+      } else {
+        wsSendCur("ERROR_INIT_FAILED");
+        EPD_Exit();
+        EPD_Status = READY;
+        curClientId = 0;
+      }
+    }
+
     if (!WiFi.setTxPower(WIFI_LOW_PWR))
       Serial.println("[WARN] Failed to set wifi transmission power to 8.5dBm.");
 

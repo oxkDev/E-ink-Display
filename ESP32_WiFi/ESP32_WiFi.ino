@@ -32,9 +32,12 @@ void setup() {
   // SPI initialization
   // EPD_Status = CLEAR;
   // wsSendAll("START");
-  Serial.print("\n[INIT] EPD Clear Image Test.\n");
+  Serial.print("\n[INIT] SPI and PSRAM Init.\n");
   EPD_initSPI();
+  Buff_init();
+  
   delay(1000);
+  Serial.print("\n[INIT] EPD Clear Image Test.\n");
   bool success = EPD_dispInit();
   delay(1000);
   if (success) {

@@ -220,6 +220,7 @@ window.addEventListener("load", () => {
 
 window.addEventListener("load", wsConnect);
 
+let ws;
 let wsTimeout = 0, reqTimeout = 0;
 let clientId = 0;
 
@@ -284,6 +285,7 @@ function wsConnect() {
         if (msg == "DONE") {
             setInn("logTag", "Upload Successful!");
             document.querySelector("#logProgress").style.width = "100%";
+            isProcessing = false;
             return;
         }
         if (msg.startsWith("RUNNING_")) {
@@ -292,16 +294,32 @@ function wsConnect() {
             console.log(`Running (session ${clientId})`);
             return;
         }
+        if (msg == "INIT") {
+            setInn("logTag", "Initialising Display.");
+            return;
+        }
+        if (msg == "SHOW") {
+            setInn("logTag", "Displaying image.");
+            return;
+        }
+        if (msg == "PSRAM_LOADING") {
+            setInn("logTag", "Loading image from PSRAM.");
+            return;
+        }
         if (msg.startsWith("RECON_")) {
             clientId = parseInt(msg.substring(6));
             setInn("logTag", `Reconnected to session ${clientId}`);
+            return;
         }
         if (msg == "ERROR_UKNOWN_REQUEST") {
             if (isProcessing) {
                 setInn("logTag", `Module missed data, retrying.`);
                 advanceQueue();
-            } else
+            } else {
                 setInn("logTag", `Module Unknown Request: ${msg}`);
+                commandQueue = [];
+                isProcessing = false;
+            }
             return;
         }
         if (msg.startsWith("ERROR_")) {
@@ -612,7 +630,6 @@ function processImg() {
 // Script D
 let pxInd, stage;
 const maxChunkSize = 1024;
-let ws;
 let commandQueue = [];
 let queueIndex = 0;
 let isProcessing = false;
@@ -643,15 +660,15 @@ function advanceQueue(q = 0) {
 }
 
 const COLOURR_TYPE = {
-    FOUR_BYTE: -2,
-    TWO_BYTE: -1,
-    ONE_BYTE: 0,
+    FOUR_BIT: -2,
+    TWO_BIT: -1,
+    ONE_BIT: 0,
 }
 
 function EPDSendChunk(colourData, colourType, startProg, endProg, excludeColour = 0) {
     while (pxInd < colourData.length) {
         let msgData = "";
-        if (colourType == COLOURR_TYPE.FOUR_BYTE) { // 4-byte colours
+        if (colourType == COLOURR_TYPE.FOUR_BIT) { // 4-bit colours
             while ((pxInd < colourData.length) && (msgData.length < maxChunkSize)) {
                 let v = 0;
                 for (let i = 0; i < 16; i += 4)
@@ -659,7 +676,7 @@ function EPDSendChunk(colourData, colourType, startProg, endProg, excludeColour 
                         v |= (colourData[pxInd++] << i);
                 msgData += wordToStr(v);
             }
-        } else if (colourType == COLOURR_TYPE.TWO_BYTE) { // 2-byte colours
+        } else if (colourType == COLOURR_TYPE.TWO_BIT) { // 2-bit colours
             while ((pxInd < colourData.length) && (msgData.length < maxChunkSize)) {
                 let v = 0;
                 for (let i = 0; i < 16; i += 2)
@@ -667,7 +684,7 @@ function EPDSendChunk(colourData, colourType, startProg, endProg, excludeColour 
                         v |= (colourData[pxInd++] << i);
                 msgData += wordToStr(v);
             }
-        } else if (colourType == COLOURR_TYPE.ONE_BYTE) { // 1-byte colours
+        } else if (colourType == COLOURR_TYPE.ONE_BIT) { // 1-bit colours
             while ((pxInd < colourData.length) && (msgData.length < maxChunkSize)) {
                 let v = 0;
                 for (let i = 0; i < 8; i++)
@@ -707,54 +724,54 @@ function uploadImage() {
         }
 
         pxInd = 0;
-        EPDSendChunk(leftA, COLOURR_TYPE.FOUR_BYTE, 1, 50);
+        EPDSendChunk(leftA, COLOURR_TYPE.FOUR_BIT, 1, 50);
         enqueueCommand("NEXT", "Switching Chip Select", 50);
         pxInd = 0;
-        EPDSendChunk(rightA, COLOURR_TYPE.FOUR_BYTE, 50, 99);
+        EPDSendChunk(rightA, COLOURR_TYPE.FOUR_BIT, 50, 99);
         enqueueCommand("SHOW", "Displaying (DRF)", 100);
     }
 
     else if ([3, 39, 43].includes(epdIndex)) { // 2.13
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BYTE, 1, 99);
+        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 1, 99);
         enqueueCommand("SHOW", "Displaying (DRF)", 100);
     }
 
     else if (epdIndex == 40) { // 2.13 B V4
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BYTE, 1, 50);
+        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 1, 50);
         enqueueCommand("NEXT", "Switching Chip Select", 50);
         pxInd = 0;
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BYTE, 50, 99, 3);
+        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 50, 99, 3);
         enqueueCommand("SHOW", "Displaying (DRF)", 100);
     }
 
     else if ([0, 3, 6, 7, 9, 12, 16, 19, 22, 26, 27, 28].includes(epdIndex)) {
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BYTE, 1, 99);
+        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 1, 99);
         enqueueCommand("SHOW", "Displaying (DRF)", 100);
     }
 
     else if (epdIndex > 15 && epdIndex < 22) {
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.TWO_BYTE, 1, 99);
+        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.TWO_BIT, 1, 99);
         enqueueCommand("SHOW", "Displaying (DRF)", 100);
     }
 
     else if (epdIndex == 25 || epdIndex == 37) { // 7 colors
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.FOUR_BYTE, 1, 99);
+        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.FOUR_BIT, 1, 99);
         enqueueCommand("SHOW", "Displaying (DRF)", 100);
     }
 
     else if (epdIndex == 49) { // 6 colors
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.FOUR_BYTE, 1, 99);
+        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.FOUR_BIT, 1, 99);
         enqueueCommand("SHOW", "Displaying (DRF)", 100);
     }
 
     else {
         console.log("Unknown EPD index, uploading default protocol.");
         if (epdIndex == 23)
-            EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BYTE, 1, 99);
+            EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 1, 99);
         else {
-            EPDSendChunk(dstColourCodesBuffer, ([1, 12].includes(epdIndex)) ? COLOURR_TYPE.TWO_BYTE : COLOURR_TYPE.ONE_BYTE, 1, 50);
+            EPDSendChunk(dstColourCodesBuffer, ([1, 12].includes(epdIndex)) ? COLOURR_TYPE.TWO_BIT : COLOURR_TYPE.ONE_BIT, 1, 50);
             enqueueCommand("NEXT", "Switching Chip Select", 50);
-            EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BYTE, 50, 99, 3);
+            EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 50, 99, 3);
         }
         enqueueCommand("SHOW", "Displaying (DRF)", 100);
 
