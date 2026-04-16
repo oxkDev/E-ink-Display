@@ -25,15 +25,17 @@
 // #include "buff.h"  // POST request data accumulator
 #include "epd.h"  // e-Paper driver
 
-#define ACCESS_POINT false
+#define ACCESS_POINT true
+#define CYCLE_INTERVAL_MIN 30000
 
 #if ACCESS_POINT
 #define WIFI_LOW_PWR WIFI_POWER_2dBm
 #else
-#define WIFI_LOW_PWR WIFI_POWER_5dBm
+#define WIFI_LOW_PWR WIFI_POWER_2dBm
 #endif
 
 #define WIFI_NORM_PWR WIFI_POWER_15dBm
+
 
 /* Hostname, SSID and password of your WiFi net ------------------------------*/
 extern const char *hostname;
@@ -54,6 +56,7 @@ extern IPAddress serverIP;  // IP address in your local wifi net
 
 /* Handler enums -------------------------------------------------------------*/
 typedef enum {
+  PSRAM,
   INIT,
   LOAD,
   NEXT,

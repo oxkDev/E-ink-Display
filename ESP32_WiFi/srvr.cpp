@@ -45,12 +45,21 @@ EPDStatus EPD_Status;
 
 std::vector<uint32_t> clientsList;
 uint32_t curClientId = 0;
-uint32_t lastCurClientReq = 0;
+uint32_t curClientTimestamp = 0;
+uint32_t cycleTimestamp = 0;
+uint32_t cycleInterval = 0;
 uint32_t reqIndex = 0;
 
 /* Webserver -----------------------------------------------------------------*/
 void wsSendCur(const String msg) {
-  if (curClientId != 0 && ws.hasClient(curClientId))
+  if (curClientId == 0) {
+    if (ws.count() > 0)
+      ws.textAll(msg);
+    
+    return;
+  }
+
+  if (ws.hasClient(curClientId))
     ws.client(curClientId)->text(msg);
   else
     Serial.println("[WARN] Current client disconnected before message sent.");
@@ -90,10 +99,6 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
   if (type == WS_EVT_DISCONNECT) {
     Serial.printf("[WS] Client (%d) disconnected\n", client->id());
     clientsList.erase(std::remove(clientsList.begin(), clientsList.end(), client->id()), clientsList.end());
-
-    // if (curClientId == client->id())
-    //   curClientId = 0;
-
     return;
   }
 
@@ -110,11 +115,13 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
       String msg = String((char *)data, len);
 
+      // Connection Requests
+
       if (msg.startsWith("RECON_")) {
         uint32_t reconnectId = msg.substring(6).toInt();
         if (reconnectId == curClientId) {
           curClientId = client->id();
-          lastCurClientReq = millis();
+          curClientTimestamp = millis();
           client->text("RECON_" + String(curClientId));
           Serial.printf("[WS] Reconnected client (%d -> %d)\n", reconnectId, client->id());
           if (EPD_Status == READY)
@@ -122,8 +129,8 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
           else
             client->text("RUNNING_" + String(curClientId));
         } else {
-          client->text("ERROR_UNKOWN_CLIENT_ID");
-          Serial.printf("[WS] Unknown Reconnect Request (%d -> %d)\n", reconnectId, client->id());
+          client->text("ERROR_UNKNOWN_RECONNECT_REQUEST");
+          Serial.printf("[WS] Unknown reconnect request (%d -> %d)\n", reconnectId, client->id());
         }
         return;
       }
@@ -146,16 +153,18 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       }
 
       if (curClientId == client->id())
-        lastCurClientReq = millis();
+        curClientTimestamp = millis();
 
-      if (msg.startsWith("INIT_")) {
-        lastCurClientReq = millis();
+      // EPD Requests
+
+      if (msg.startsWith("INIT")) {
+        curClientTimestamp = millis();
         reqIndex = 0;
         curClientId = client->id();
         client->text("RUNNING_" + String(curClientId));
         wsSendAll("BUSY");
         // Getting of e-Paper's type
-        EPD_dispIndex = msg.substring(5).toInt();
+        EPD_dispIndex = msg.substring(msg.startsWith("INITP_") ? 6 : 5).toInt();
 
         if (EPD_dispIndex < 0 || EPD_dispIndex > 50) {
           wsSendCur("ERROR_UNKNOWN_DISPLAY");
@@ -163,9 +172,9 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
           return;
         }
 
-        EPD_Status = INIT;
+        EPD_Status = msg.startsWith("INITP_") ? PSRAM : INIT;
 
-        Serial.printf("[WS] Init EPD %d: %s\n", EPD_dispIndex, EPD_dispMass[EPD_dispIndex].title);
+        Serial.printf("[WS] Set EPD %d: %s\n", EPD_dispIndex, EPD_dispMass[EPD_dispIndex].title);
         return;
       }
 
@@ -173,21 +182,15 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
         client->text("RUNNING_" + String(curClientId));
         reqIndex++;
         Serial.printf("[WS] LOAD (%d)", reqIndex);
-        String dataStr = msg.substring(5);
-        // // Boundary check
-        // if (dataStr.length() > BUFF_MAX_CHUNK_SIZE) {
-        //   Serial.println("[ERROR] Incoming chunk exceeds buffer size!");
-        //   client->text("ERROR_BUFFER_OVERFLOW");
-        //   return;  // Abort processing
-        // }
+        const String dataStr = msg.substring(5);
 
-        Buff_msgIndex = dataStr.length();
-        dataStr.toCharArray(Buff_message, Buff_msgIndex + 1);
+        Buff_msgLength = dataStr.length();
+        dataStr.getBytes(Buff_message, Buff_msgLength + 1);
         EPD_Status = LOAD;
         return;
       }
 
-      if (msg == "NEXT") {
+      if (msg == "NEXTIC") {
         client->text("RUNNING_" + String(curClientId));
         reqIndex++;
         Serial.println("[WS] NEXT IC");
@@ -210,38 +213,115 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
         EPD_Status = SHOW;
         return;
       }
+
+      if (msg.startsWith("PSRAM_")) {
+        if (!Buff_hasPsram) {
+          client->text("ERROR_NO_PSRAM");
+          return;
+        }
+
+        const String cmdStr = msg.substring(6);
+        bool success = false;
+        if (cmdStr == "PREV")
+          success = Buff_selectImage((int8_t)Buff_imgIndex + 1);
+        else if (cmdStr == "NEXT")
+          success = Buff_selectImage((int8_t)Buff_imgIndex - 1);
+        else if (cmdStr.toInt() == 0 && cmdStr != "0") {
+          client->text("ERROR_UNKNOWN_PSRAM_COMMAND");
+          return;
+        } else
+          success = Buff_selectImage(cmdStr.toInt());
+
+        if (!success) {
+          client->text("ERROR_INVALID_IMAGE_INDEX");
+          return;
+        }
+
+        curClientId = client->id();
+        curClientTimestamp = millis();
+        client->text("RUNNING_" + String(curClientId));
+        wsSendAll("BUSY");
+        EPD_Status = SHOW;
+        Serial.printf("[WS] PSRAM %d\n", Buff_imgIndex);
+
+        return;
+      }
+
+      if (msg.startsWith("CYCLE_")) {
+        if (!Buff_hasPsram) {
+          client->text("ERROR_NO_PSRAM");
+          return;
+        }
+
+        const String cmdStr = msg.substring(6);
+        const uint32_t cmdInterval = cmdStr.toInt();
+
+        if (cmdStr == "STOP") {
+          cycleInterval = 0;
+        } else if (cmdInterval == 0 && cmdStr != "0") {
+          client->text("ERROR_UNKNOWN_PSRAM_COMMAND");
+          return;
+        } else if (cmdInterval < CYCLE_INTERVAL_MIN) {
+          client->text("ERROR_INSUFFICIENT_INTERVAL_LENGTH");
+          return;
+        } else
+          cycleInterval = cmdInterval;
+
+        if (Buff_imgList.size() < 2 && cycleInterval >= CYCLE_INTERVAL_MIN) {
+          client->text("WARN_INSUFFICIENT_IMAGES");
+        }
+
+        cycleTimestamp = millis();
+
+        reqIndex = 0;
+        EPD_Status = READY;
+        client->text("ACK_" + String(reqIndex));
+
+        return;
+      }
     }
 
-    Serial.printf("[WS] Unknown request (%d%d%d): %s", info->final, info->index == 0, info->len == len, info->opcode == WS_TEXT, (char *)data);
+    Serial.println("[WS] Unknown request:");
+    Serial.printf("     %s\n", (char *)data);
+    Serial.printf("     Final:      %d\n", info->final);
+    Serial.printf("     Index 0:    %d\n", info->index == 0);
+    Serial.printf("     Length:     %u (%u, %u)\n", info->len == len, info->len, len);
+    Serial.printf("     opcode txt: %d\n", info->opcode == WS_TEXT);
     client->text("ERROR_UNKNOWN_REQUEST");
   }
 }
 
 void EPDHandler() {
-  const uint32_t t = millis();
-  if (curClientId != 0 && t - lastCurClientReq > 30000 && t > lastCurClientReq) {
-    Serial.printf("[ERROR] Current Client Timeout: %u - %u\n", t, lastCurClientReq);
-    curClientId = 0;
-    reqIndex = 0;
+  uint32_t t = millis();
+  // Timeout Control
+  if (curClientId != 0 && t - curClientTimestamp > 30000 && t > curClientTimestamp && EPD_Status != EXIT) {
+    Serial.printf("[ERROR] Current Client Timeout: %u ms\n", t - curClientTimestamp);
     EPD_Status = EXIT;
-    EPD_Exit();
-    EPD_Status = READY;
-    wsSendAll("READY");
   }
 
-  if (EPD_Status == INIT) {
+  // Requests
+
+  if (EPD_Status == PSRAM) {
     if (EPD_dispIndex == 50 && Buff_hasPsram) {
-      Buff_allocPsram(1600 * 1200 / 2);
+      Buff_newImage(1600 * 1200 / 2);
       Serial.printf("[BUFF] Allocate PSRAM: %s\n", Buff_usePsram ? "Success" : "Failed");
       if (Buff_usePsram) {
-        Serial.println("[BUFF] Skipping initialisation.");
+        Serial.println("[BUFF] PSRAM Init success, skipping initialisation.");
         EPD_Status = READY;
         wsSendCur("ACK_" + String(reqIndex));
         return;
-      }
-    }
+      } else
+        wsSendCur("WARN_ALLOCATE_PSRAM_FAILED");
+    } else
+      wsSendCur("WARN_NO_PSRAM");
+    Serial.println("[BUFF] PSRAM Init failed, defaulting to basic loading.");
+    EPD_Status = INIT;
+  }
+
+  if (EPD_Status == INIT) {
     // Initialization
     bool success = EPD_dispInit();
+    Buff_usePsram = false;
     delay(500);
     EPD_Status = READY;
     if (success)
@@ -249,9 +329,7 @@ void EPDHandler() {
     else {
       // Zero power consumption
       wsSendCur("ERROR_INIT_FAILED");
-      EPD_Exit();
-      curClientId = 0;
-      EPD_Status = READY;
+      EPD_Status = EXIT;
     }
     return;
   }
@@ -261,38 +339,18 @@ void EPDHandler() {
     if (EPD_dispLoad != 0) {
       EPD_dispLoad();
       EPD_Status = READY;
-      Serial.println(" - Done");
       wsSendCur("ACK_" + String(reqIndex));
+      Serial.println(" - Done");
     } else {
       wsSendCur("ERROR_UNKNOWN_DISPLAY");
-      EPD_Exit();
-      curClientId = 0;
-      EPD_Status = READY;
+      EPD_Status = EXIT;
     }
     return;
   }
 
   if (EPD_Status == NEXT) {
-    int nextCode = EPD_dispMass[EPD_dispIndex].next;
-
-    // Instruction code for for writting data into e-paper's memory
-    if (EPD_dispIndex == 34) {
-      if (flag == 0)
-        nextCode = 0x26;
-      else
-        nextCode = 0x13;
-    } else if (EPD_dispIndex == 50 && !Buff_usePsram) {
-      EPD_CS_ALL(1);
-      digitalWrite(PIN_SPI_CS_S, 0);
-      EPD_SendCommand_13in3E6(0x10);
-    }
-
-    if (nextCode != -1) {  // Skip if -1, else send set "next" command code.
-      EPD_SendCommand(nextCode);
-      delay(2);
-    }
-
-    EPD_dispLoad = EPD_dispMass[EPD_dispIndex].loadRed;
+    if (!Buff_usePsram)
+      EPD_dispNext();
     EPD_Status = READY;
     wsSendCur("ACK_" + String(reqIndex));
     return;
@@ -302,40 +360,37 @@ void EPDHandler() {
     // Load clear iamge into the e-Paper
     if (EPD_dispIndex == 50) {
       EPD_13in3E_Clear(EPD_13in3E_WHITE);
+
+      EPD_Status = READY;
+      wsSendCur("ACK_" + String(reqIndex));
     } else {
       // Zero power consumption
       wsSendCur("ERROR_CLEAR_UNSUPPORTED");
-      EPD_Exit();
-      curClientId = 0;
-      EPD_Status = READY;
+      EPD_Status = EXIT;
     }
-
-    EPD_Status = READY;
-    wsSendCur("ACK_" + String(reqIndex));
     return;
   }
 
   if (EPD_Status == SHOW) {
     if (EPD_dispIndex == 50 && Buff_usePsram) {
       wsSendCur("INIT");
-      bool success = EPD_dispInit();
+      bool success = !EPD_isOn ? EPD_dispInit() : true;
       delay(500);
       if (success) {
         wsSendCur("PSRAM_LOADING");
-        EPD_load_psram_13in3E6();
-        delay(500);
+        Serial.println("[EPD] Loading image from PSRAM.");
+        EPD_load_image_13in3E6();
         wsSendCur("SHOW");
+        Serial.println("[EPD] Displaying PSRAM image.");
       } else {
         wsSendCur("ERROR_INIT_FAILED");
-        EPD_Exit();
-        EPD_Status = READY;
-        curClientId = 0;
+        EPD_Status = EXIT;
+        return;
       }
     }
 
     if (!WiFi.setTxPower(WIFI_LOW_PWR))
-      Serial.println("[WARN] Failed to set wifi transmission power to 8.5dBm.");
-
+      Serial.println("[WARN] Failed to set wifi transmission power to 15dBm.");
     delay(2000);
 #if !ACCESS_POINT
     Serial.printf("[WiFi] Low Power RSSI: %d\n", WiFi.RSSI());
@@ -343,12 +398,8 @@ void EPDHandler() {
     bool success = EPD_dispMass[EPD_dispIndex].show();
     delay(1000);
 
-    // Zero power consumption
-    EPD_Exit();
-    delay(1000);
     if (!WiFi.setTxPower(WIFI_NORM_PWR))
-      Serial.println("[WARN] Failed to set wifi transmission power to 19dBm.");
-
+      Serial.println("[WARN] Failed to set wifi transmission power to 2dBm.");
     delay(1000);
 #if !ACCESS_POINT
     Serial.printf("[WiFi] Normal Power RSSI: %d\n", WiFi.RSSI());
@@ -356,12 +407,32 @@ void EPDHandler() {
 
     if (success) {
       wsSendCur("DONE");
-      wsSendAll("READY");
     } else
       wsSendCur("ERROR_DRF_FAILED");
 
+    EPD_Status = EXIT;
+  }
+
+  if (EPD_Status == EXIT) {
+    Serial.println("[WS] Exit Sequence.");
+    // Zero power consumption
+    EPD_Exit();
+    // Buff_deleteImage();
     EPD_Status = READY;
+    wsSendAll("READY");
     curClientId = 0;
+    reqIndex = 0;
+    cycleTimestamp = t;
+    return;
+  }
+
+  t = millis();
+  if (curClientId == 0 && Buff_imgList.size() > 1 && cycleInterval >= CYCLE_INTERVAL_MIN && t - cycleTimestamp >= cycleInterval) {
+    Serial.printf("[WS] Cycling image %d\n", Buff_imgIndex - 1);
+    Buff_selectImage((int8_t)Buff_imgIndex - 1);
+    wsSendAll("CYCLE_" + String(Buff_imgIndex));
+    EPD_Status = SHOW;
+    cycleTimestamp = t;
   }
 }
 
@@ -460,8 +531,6 @@ bool Srvr_setup() {
 
   // Serve the static files from the /data folder
   server.serveStatic("/", LittleFS, "/").setDefaultFile("/index.html");
-
-  // server.on()
 
   // Start the server
   server.begin();

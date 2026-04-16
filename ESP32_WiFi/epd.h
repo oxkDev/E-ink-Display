@@ -12,32 +12,32 @@
 #define __EPD_H
 
 #include <arduino.h>
-#include <vector>
+#include <list>
 #include <SPI.h>
 
 #include "buff.h"
 
 /* e-Paper initialization functions ------------------------------------------*/
-#include "epd1in54.h"
-#include "epd2in13.h"
-#include "epd2in9.h"
-#include "epd2in7.h"
-#include "epd2in66.h"
-#include "epd3in7.h"
-#include "epd3in52.h"
-#include "epd4in01f.h"
-#include "epd4in2.h"
-#include "epd4in26.h"
-#include "epd5in65f.h"
-#include "epd5in83.h"
-#include "epd7in3.h"
-#include "epd7in5.h"
-#include "epd7in5_HD.h"
-#include "epd13in3.h"
+#include "src/epd1in54.h"
+#include "src/epd2in13.h"
+#include "src/epd2in9.h"
+#include "src/epd2in7.h"
+#include "src/epd2in66.h"
+#include "src/epd3in7.h"
+#include "src/epd3in52.h"
+#include "src/epd4in01f.h"
+#include "src/epd4in2.h"
+#include "src/epd4in26.h"
+#include "src/epd5in65f.h"
+#include "src/epd5in83.h"
+#include "src/epd7in3.h"
+#include "src/epd7in5.h"
+#include "src/epd7in5_HD.h"
+#include "src/epd13in3.h"
 
 /* Pin level definition ------------------------------------------------------*/
-#define LOW 0
-#define HIGH 1
+// #define LOW 0
+// #define HIGH 1
 
 #define GPIO_PIN_SET 1
 #define GPIO_PIN_RESET 0
@@ -73,6 +73,8 @@
 extern SPIClass fspi;
 extern SPISettings spi_settings;
 
+extern bool EPD_isOn;
+
 void EPD_initSPI();
 void GPIO_Mode(unsigned char GPIO_Pin, unsigned char Mode);
 
@@ -88,7 +90,7 @@ void EPD_Exit(void);
 
 /* The procedure of sending a byte to e-Paper by SPI -------------------------*/
 void EPD_SendByte(byte data);
-void EPD_SendByteList(std::vector<byte> dataList);
+void EPD_SendByteList(std::list<byte> dataList);
 unsigned char DEV_SPI_ReadByte(void);
 
 /* Sending command -----------------------------------------------------------*/
@@ -107,12 +109,6 @@ void EPD_Send_3(byte c, byte v1, byte v2, byte v3);
 void EPD_Send_4(byte c, byte v1, byte v2, byte v3, byte v4);
 void EPD_Send_5(byte c, byte v1, byte v2, byte v3, byte v4, byte v5);
 
-/* EPD Model Specific Functions ----------------------------------------------*/
-extern bool EPD_invert;             // If true, then image data bits must be inverted
-extern int EPD_dispIndex;           // The index of the e-Paper's type
-extern int EPD_dispX, EPD_dispY;    // Current pixel's coordinates (for 2.13 only)
-extern void (*EPD_dispLoad)(void);  // Pointer on a image data writting function
-
 /* The set of pointers on 'init', 'load' and 'show' functions, title and code */
 struct EPD_dispInfo {
   int (*init)(void);      // Initialization
@@ -126,8 +122,19 @@ struct EPD_dispInfo {
 /* Array of sets describing the usage of e-Papers ----------------------------*/
 extern EPD_dispInfo EPD_dispMass[];
 
-/* Initialization of an e-Paper ----------------------------------------------*/
+/* EPD Model Specific Functions ----------------------------------------------*/
+extern bool EPD_invert;             // If true, then image data bits must be inverted
+extern int EPD_dispIndex;           // The index of the e-Paper's type
+extern int EPD_dispX, EPD_dispY;    // Current pixel's coordinates (for 2.13 only)
+
+/* e-paper data loading ------------------------------------------------------*/
+extern void (*EPD_dispLoad)(void);  // Pointer on a image data writting function
+
+/* e-paper initialization ----------------------------------------------------*/
 bool EPD_dispInit(void);
+
+/* e-paper IC change ---------------------------------------------------------*/
+void EPD_dispNext(void);
 
 /* Image Data Loading --------------------------------------------------------*/
 void EPD_loadA(void);         // a-type e-Paper
@@ -140,7 +147,7 @@ void EPD_loadF(void);         // 5.83b e-Paper
 void EPD_loadG(void);         // 5.65f e-Paper
 void EPD_load_13in3E6(void);  // 13.3 e-paper
 
-void EPD_load_psram_13in3E6(void);
+bool EPD_load_image_13in3E6(int imgIndex = -1);
 
 /* Image Data showing --------------------------------------------------------*/
 bool EPD_showA(void);  // Show Sequence (a-type, 4.2 and 2.7 e-Paper)

@@ -1,55 +1,55 @@
 // SCRIPT A
 const epdData = [
-    { width: 200, height: 200, paletteIndex: 0, name: "1.54" },
-    { width: 200, height: 200, paletteIndex: 3, name: "1.54b" },
-    { width: 152, height: 152, paletteIndex: 5, name: "1.54c" },
-    { width: 122, height: 250, paletteIndex: 0, name: "2.13" },
-    { width: 104, height: 212, paletteIndex: 1, name: "2.13b" },
-    { width: 104, height: 212, paletteIndex: 5, name: "2.13c" },
-    { width: 104, height: 212, paletteIndex: 0, name: "2.13d" },
-    { width: 176, height: 264, paletteIndex: 0, name: "2.7" },
-    { width: 176, height: 264, paletteIndex: 1, name: "2.7b" },
-    { width: 128, height: 296, paletteIndex: 0, name: "2.9" },
-    { width: 128, height: 296, paletteIndex: 1, name: "2.9b" },
-    { width: 128, height: 296, paletteIndex: 5, name: "2.9c" },
-    { width: 128, height: 296, paletteIndex: 0, name: "2.9d" },
-    { width: 400, height: 300, paletteIndex: 0, name: "4.2" },
-    { width: 400, height: 300, paletteIndex: 1, name: "4.2b" },
-    { width: 400, height: 300, paletteIndex: 5, name: "4.2c" },
-    { width: 600, height: 448, paletteIndex: 0, name: "5.83" },
-    { width: 600, height: 448, paletteIndex: 1, name: "5.83b" },
-    { width: 600, height: 448, paletteIndex: 5, name: "5.83c" },
-    { width: 640, height: 384, paletteIndex: 0, name: "7.5" },
-    { width: 640, height: 384, paletteIndex: 1, name: "7.5b" },
-    { width: 640, height: 384, paletteIndex: 5, name: "7.5c" },
-    { width: 800, height: 480, paletteIndex: 0, name: "7.5 V2" },
-    { width: 800, height: 480, paletteIndex: 1, name: "7.5b V2" },
-    { width: 880, height: 528, paletteIndex: 1, name: "7.5b HD" },
-    { width: 600, height: 448, paletteIndex: 7, name: "5.65f" },
-    { width: 880, height: 528, paletteIndex: 0, name: "7.5 HD" },
-    { width: 280, height: 480, paletteIndex: 0, name: "3.7" },
-    { width: 152, height: 296, paletteIndex: 0, name: "2.66" },
-    { width: 648, height: 480, paletteIndex: 1, name: "5.83b V2" },
-    { width: 128, height: 296, paletteIndex: 1, name: "2.9b V3" },
-    { width: 200, height: 200, paletteIndex: 1, name: "1.54b V2" },
-    { width: 104, height: 214, paletteIndex: 1, name: "2.13b V3" },
-    { width: 128, height: 296, paletteIndex: 0, name: "2.9 V2" },
-    { width: 400, height: 300, paletteIndex: 1, name: "4.2b V2" },
-    { width: 152, height: 296, paletteIndex: 1, name: "2.66b" },
-    { width: 648, height: 480, paletteIndex: 0, name: "5.83 V2" },
-    { width: 640, height: 400, paletteIndex: 7, name: "4.01 f" },
-    { width: 176, height: 264, paletteIndex: 1, name: "2.7b V2" },
-    { width: 122, height: 250, paletteIndex: 0, name: "2.13 V3" },
+    { width: 200, height: 200, paletteIndex: 0, name: "1.54"      },
+    { width: 200, height: 200, paletteIndex: 3, name: "1.54b"     },
+    { width: 152, height: 152, paletteIndex: 5, name: "1.54c"     },
+    { width: 122, height: 250, paletteIndex: 0, name: "2.13"      },
+    { width: 104, height: 212, paletteIndex: 1, name: "2.13b"     },
+    { width: 104, height: 212, paletteIndex: 5, name: "2.13c"     },
+    { width: 104, height: 212, paletteIndex: 0, name: "2.13d"     },
+    { width: 176, height: 264, paletteIndex: 0, name: "2.7"       },
+    { width: 176, height: 264, paletteIndex: 1, name: "2.7b"      },
+    { width: 128, height: 296, paletteIndex: 0, name: "2.9"       },
+    { width: 128, height: 296, paletteIndex: 1, name: "2.9b"      },
+    { width: 128, height: 296, paletteIndex: 5, name: "2.9c"      },
+    { width: 128, height: 296, paletteIndex: 0, name: "2.9d"      },
+    { width: 400, height: 300, paletteIndex: 0, name: "4.2"       },
+    { width: 400, height: 300, paletteIndex: 1, name: "4.2b"      },
+    { width: 400, height: 300, paletteIndex: 5, name: "4.2c"      },
+    { width: 600, height: 448, paletteIndex: 0, name: "5.83"      },
+    { width: 600, height: 448, paletteIndex: 1, name: "5.83b"     },
+    { width: 600, height: 448, paletteIndex: 5, name: "5.83c"     },
+    { width: 640, height: 384, paletteIndex: 0, name: "7.5"       },
+    { width: 640, height: 384, paletteIndex: 1, name: "7.5b"      },
+    { width: 640, height: 384, paletteIndex: 5, name: "7.5c"      },
+    { width: 800, height: 480, paletteIndex: 0, name: "7.5 V2"    },
+    { width: 800, height: 480, paletteIndex: 1, name: "7.5b V2"   },
+    { width: 880, height: 528, paletteIndex: 1, name: "7.5b HD"   },
+    { width: 600, height: 448, paletteIndex: 7, name: "5.65f"     },
+    { width: 880, height: 528, paletteIndex: 0, name: "7.5 HD"    },
+    { width: 280, height: 480, paletteIndex: 0, name: "3.7"       },
+    { width: 152, height: 296, paletteIndex: 0, name: "2.66"      },
+    { width: 648, height: 480, paletteIndex: 1, name: "5.83b V2"  },
+    { width: 128, height: 296, paletteIndex: 1, name: "2.9b V3"   },
+    { width: 200, height: 200, paletteIndex: 1, name: "1.54b V2"  },
+    { width: 104, height: 214, paletteIndex: 1, name: "2.13b V3"  },
+    { width: 128, height: 296, paletteIndex: 0, name: "2.9 V2"    },
+    { width: 400, height: 300, paletteIndex: 1, name: "4.2b V2"   },
+    { width: 152, height: 296, paletteIndex: 1, name: "2.66b"     },
+    { width: 648, height: 480, paletteIndex: 0, name: "5.83 V2"   },
+    { width: 640, height: 400, paletteIndex: 7, name: "4.01 f"    },
+    { width: 176, height: 264, paletteIndex: 1, name: "2.7b V2"   },
+    { width: 122, height: 250, paletteIndex: 0, name: "2.13 V3"   },
     { width: 122, height: 250, paletteIndex: 1, name: "2.13 B V4" },
-    { width: 240, height: 360, paletteIndex: 0, name: "3.52" },
-    { width: 176, height: 264, paletteIndex: 0, name: "2.7 V2" },
-    { width: 122, height: 250, paletteIndex: 0, name: "2.13 V4" },
-    { width: 400, height: 300, paletteIndex: 0, name: "4.2 V2" },
-    { width: 960, height: 680, paletteIndex: 0, name: "13.3k" },
-    { width: 800, height: 480, paletteIndex: 0, name: "4.26" },
-    { width: 128, height: 296, paletteIndex: 1, name: "2.9bV4" },
-    { width: 960, height: 680, paletteIndex: 1, name: "13.3b" },
-    { width: 800, height: 480, paletteIndex: 6, name: "7.3E" },
+    { width: 240, height: 360, paletteIndex: 0, name: "3.52"      },
+    { width: 176, height: 264, paletteIndex: 0, name: "2.7 V2"    },
+    { width: 122, height: 250, paletteIndex: 0, name: "2.13 V4"   },
+    { width: 400, height: 300, paletteIndex: 0, name: "4.2 V2"    },
+    { width: 960, height: 680, paletteIndex: 0, name: "13.3k"     },
+    { width: 800, height: 480, paletteIndex: 0, name: "4.26"      },
+    { width: 128, height: 296, paletteIndex: 1, name: "2.9bV4"    },
+    { width: 960, height: 680, paletteIndex: 1, name: "13.3b"     },
+    { width: 800, height: 480, paletteIndex: 6, name: "7.3E"      },
     { width: 1200, height: 1600, paletteIndex: 6, name: "13.3E" }
 ];
 
@@ -63,6 +63,8 @@ const palettes = [
     [[20, 15, 50], [255, 255, 255], [255, 255, 0], [185, 55, 60], [50, 80, 195], [60, 140, 70]], // B W Y R B G
     [[0, 0, 0], [255, 255, 255], [0, 255, 0], [0, 0, 255], [255, 0, 0], [255, 255, 0], [255, 128, 0]] // B W G B R Y O
 ]; //5.65f 7-colour E-Paper;
+
+// HTML listeners and helper functions
 
 function setPalette(paletteIndex) {
     rgbDistCache = {};
@@ -84,14 +86,14 @@ function setPalette(paletteIndex) {
 function getElm(n) { return document.getElementById(n); }
 function setInn(n, i) { document.getElementById(n).innerHTML = i; }
 
-let srcImg = new Image(),
-    dstImgData,
-    epdIndex = 50,
-    curPaletteRGB = [],
-    curPaletteLab = [],
-    rgbDistCache = {},
-    curPaletteCodes = [],
-    dstColourCodesBuffer = new Uint8Array();
+let srcImg = new Image();
+let dstImgData;
+let epdIndex = 50;
+let curPaletteRGB = [];
+let curPaletteLab = [];
+let curPaletteCodes = [];
+let rgbDistCache = {};
+let dstColourCodesBuffer = new Uint8Array();
 
 
 function processFiles(files) {
@@ -117,21 +119,16 @@ function processFiles(files) {
     reader.readAsDataURL(file);
 }
 
-function onDrop(e) {
-    console.log("image dropped.");
-    e.stopPropagation();
-    e.preventDefault();
-    let files = e.dataTransfer.files;
-    processFiles(files);
-}
-
 function stopEvent(e) {
     e.stopPropagation();
     e.preventDefault();
 }
 
-function displayOptionElm(vl, tx) {
-    return "<option name=\"kind\" value=\"" + vl + "\" " + (vl == 50 ? "selected" : "") + ">" + tx + "</option>";
+function onDrop(e) {
+    console.log("image dropped.");
+    stopEvent(e);
+    let files = e.dataTransfer.files;
+    processFiles(files);
 }
 
 function updateDimensions(index) {
@@ -182,30 +179,36 @@ window.addEventListener("load", () => {
     document.addEventListener("dragover", stopEvent);
     dropbox.addEventListener("drop", onDrop);
     srcImg = null;
-    epdIndex = 0;
 
     getElm("upload").addEventListener("click", uploadImage);
     getElm("clear").addEventListener("click", clearImage);
+
+    getElm("imgNext").addEventListener("click", () => changeImage("NEXT"));
+    getElm("imgPrev").addEventListener("click", () => changeImage("PREV"));
 
     const inputIDs = ["bgColour", "setColour", "setDithering", "rotateMode", "scaleMode", "imgH", "imgW", "imgY", "imgX"];
 
     for (let i = 0; i < inputIDs.length; i++)
         getElm(inputIDs[i]).addEventListener("change", processInputs);
 
-    let optionsHTML = "";
+    const displayTypeElm = getElm("displayType");
 
-    for (let i = 0; i < epdData.length; i++)
-        optionsHTML += displayOptionElm(i, epdData[i].name);
+    for (let i = 0; i < epdData.length; i++) {
+        let option = document.createElement("option");
+        option.value = i;
+        option.innerText = epdData[i].name;
+        option.name = "kind";
+        option.selected = i == epdIndex;
 
-    setInn("displayType", optionsHTML);
+        displayTypeElm.appendChild(option);
+    }
 
-    const selectionElm = getElm("displayType");
-    selectionElm.addEventListener("change", (e) => {
-        updateDimensions(selectionElm.value);
+    displayTypeElm.addEventListener("change", (e) => {
+        updateDimensions(displayTypeElm.value);
         processInputs();
     });
 
-    updateDimensions(selectionElm.value);
+    updateDimensions(displayTypeElm.value);
 
     getElm("ipAddress").addEventListener("change", () => {
         if (ws.readyState != WebSocket.OPEN)
@@ -218,121 +221,7 @@ window.addEventListener("load", () => {
     });
 });
 
-window.addEventListener("load", wsConnect);
-
-let ws;
-let wsTimeout = 0, reqTimeout = 0;
-let clientId = 0;
-
-function wsConnect() {
-    console.log("Hardware connecting.");
-    clearTimeout(wsTimeout);
-    let ip = getElm("ipAddress").value;
-    ws = new WebSocket("ws://" + ip + "/ws");
-    getElm("wsStatus").style.color = "";
-    getElm("wsStatus").innerText = "● Connecting...";
-
-    let wasConnected = false;
-    ws.onopen = () => {
-        wasConnected = true;
-        getElm("wsStatus").style.color = "var(--success)";
-        getElm("wsStatus").innerText = "● Hardware Connected";
-        clearTimeout(wsTimeout);
-        console.log("Hardware connected.");
-        if (commandQueue.length != 0 && commandQueue[queueIndex].payload.startsWith("LOAD")) {
-            console.log("Attempting to resume loading.");
-            ws.send(`RECON_${clientId}`);
-        }
-    };
-
-    ws.onclose = () => {
-        getElm("wsStatus").style.color = "var(--error)";
-        getElm("wsStatus").innerText = "● Disconnected";
-        clearTimeout(reqTimeout);
-        reqTimeout = 0;
-        // commandQueue = [];
-        console.log("Hardware disconnected.");
-        wsTimeout = setTimeout(wsConnect, wasConnected ? 100 : 5000);
-        wasConnected = false;
-    };
-
-    ws.onmessage = (evt) => {
-        const msg = evt.data;
-        clearTimeout(reqTimeout);
-        reqTimeout = 0;
-
-        if (msg == "READY") {
-            setInn("logTag", "Hardware ready.");
-            return;
-        }
-        if (msg.startsWith("ACK_")) {
-            const newQueueIndex = parseInt(msg.substring(4));
-            if (isNaN(newQueueIndex) || newQueueIndex != queueIndex) {
-                console.error(`Unexpected queue index: Expected ${queueIndex}, received ${newQueueIndex}`);
-                queueIndex = newQueueIndex;
-            }
-            advanceQueue(++queueIndex);
-            return;
-        }
-        if (msg == "BUSY") {
-            setInn("logTag", "Hardware busy.");
-            return;
-        }
-        if (msg == "BOOT") {
-            setInn("logTag", "Hardware starting.");
-            return;
-        }
-        if (msg == "DONE") {
-            setInn("logTag", "Upload Successful!");
-            document.querySelector("#logProgress").style.width = "100%";
-            isProcessing = false;
-            return;
-        }
-        if (msg.startsWith("RUNNING_")) {
-            clientId = msg.substring(8);
-            getElm("logTag").innerText += "...";
-            console.log(`Running (session ${clientId})`);
-            return;
-        }
-        if (msg == "INIT") {
-            setInn("logTag", "Initialising Display.");
-            return;
-        }
-        if (msg == "SHOW") {
-            setInn("logTag", "Displaying image.");
-            return;
-        }
-        if (msg == "PSRAM_LOADING") {
-            setInn("logTag", "Loading image from PSRAM.");
-            return;
-        }
-        if (msg.startsWith("RECON_")) {
-            clientId = parseInt(msg.substring(6));
-            setInn("logTag", `Reconnected to session ${clientId}`);
-            return;
-        }
-        if (msg == "ERROR_UKNOWN_REQUEST") {
-            if (isProcessing) {
-                setInn("logTag", `Module missed data, retrying.`);
-                advanceQueue();
-            } else {
-                setInn("logTag", `Module Unknown Request: ${msg}`);
-                commandQueue = [];
-                isProcessing = false;
-            }
-            return;
-        }
-        if (msg.startsWith("ERROR_")) {
-            setInn("logTag", `Module Error: ${msg.replace("ERROR_", "").replaceAll("_", " ").toLowerCase()}`);
-            console.log(`Error: ${msg}`);
-            commandQueue = [];
-            isProcessing = false;
-        } else
-            setInn("logTag", `Unknown Message: ${msg}`);
-    };
-}
-
-// SCRIPT B
+// Image Processing
 let imgW, imgH;
 
 function setColourCode(pixelIndex, colourIndex) {
@@ -456,7 +345,11 @@ function preprocessImage() {
     if (rotation === 90 || rotation === 270) {
         [rotW, rotH] = [rotH, rotW];
         [rotTargetW, rotTargetH] = [rotTargetH, rotTargetW];
+        [shiftX, shiftY] = [shiftY, shiftX];
     }
+
+    if (rotation === 180 || rotation === 270)
+        [shiftX, shiftY] = [-shiftX, -shiftY];
 
     let scale = 1;
 
@@ -627,15 +520,142 @@ function processImg() {
     setTimeout(() => canvasElm.getContext("2d").putImageData(dstImgData, 0, 0), 100);
 }
 
+window.addEventListener("load", wsConnect);
+
+let ws;
+let wsTimeout = 0, reqTimeout = 0;
+let clientId = 0;
+
+function wsConnect() {
+    console.log("Hardware connecting.");
+    clearTimeout(wsTimeout);
+    let ip = getElm("ipAddress").value;
+    ws = new WebSocket("ws://" + ip + "/ws");
+    getElm("wsStatus").style.color = "";
+    getElm("wsStatus").innerText = "● Connecting...";
+
+    let wasConnected = false;
+    ws.onopen = () => {
+        wasConnected = true;
+        getElm("wsStatus").style.color = "var(--success)";
+        getElm("wsStatus").innerText = "● Hardware Connected";
+        clearTimeout(wsTimeout);
+        console.log("Hardware connected.");
+        if (commandQueue.length != 0 && commandQueue[queueIndex].payload.startsWith("LOAD")) {
+            console.log("Attempting to resume loading.");
+            ws.send(`RECON_${clientId}`);
+        }
+    };
+
+    ws.onclose = () => {
+        getElm("wsStatus").style.color = "var(--error)";
+        getElm("wsStatus").innerText = "● Disconnected";
+        clearTimeout(reqTimeout);
+        reqTimeout = 0;
+        // commandQueue = [];
+        console.log("Hardware disconnected.");
+        clearTimeout(wsTimeout);
+        wsTimeout = setTimeout(wsConnect, wasConnected ? 100 : 5000);
+        wasConnected = false;
+    };
+
+    ws.onmessage = (evt) => {
+        const msg = evt.data;
+        clearTimeout(reqTimeout);
+        reqTimeout = 0;
+
+        if (msg == "READY") {
+            setInn("logTag", "Hardware ready.");
+            return;
+        }
+        if (msg.startsWith("ACK_")) {
+            const newQueueIndex = parseInt(msg.substring(4));
+            if (isNaN(newQueueIndex) || newQueueIndex != queueIndex) {
+                console.error(`Unexpected queue index: Expected ${queueIndex}, received ${newQueueIndex}`);
+                queueIndex = newQueueIndex;
+            }
+            advanceQueue(++queueIndex);
+            return;
+        }
+        if (msg == "BUSY") {
+            setInn("logTag", "Hardware busy.");
+            return;
+        }
+        if (msg == "BOOT") {
+            setInn("logTag", "Hardware starting.");
+            return;
+        }
+        if (msg == "DONE") {
+            setInn("logTag", "Upload Successful!");
+            document.querySelector("#logProgress").style.width = "100%";
+            clearTimeout(reqTimeout);
+            commandQueue = [];
+            queueIndex = 0;
+            isProcessing = false;
+            return;
+        }
+        if (msg.startsWith("RUNNING_")) {
+            clientId = msg.substring(8);
+            getElm("logTag").innerText += "...";
+            console.log(`Running (session ${clientId})`);
+            return;
+        }
+        if (msg == "INIT") {
+            setInn("logTag", "Initialising display.");
+            return;
+        }
+        if (msg == "SHOW") {
+            setInn("logTag", "Displaying image.");
+            return;
+        }
+        if (msg == "PSRAM_LOADING") {
+            setInn("logTag", "Loading image from PSRAM.");
+            return;
+        }
+        if (msg.startsWith("RECON_")) {
+            clientId = parseInt(msg.substring(6));
+            setInn("logTag", `Reconnected to session ${clientId}`);
+            return;
+        }
+        if (msg == "ERROR_UNKNOWN_REQUEST") {
+            if (isProcessing) {
+                setInn("logTag", `Module missed data, retrying.`);
+                advanceQueue(queueIndex);
+            } else {
+                setInn("logTag", `Module Unknown Request: ${msg}`);
+                commandQueue = [];
+                isProcessing = false;
+            }
+            return;
+        }
+        if (msg.startsWith("ERROR_")) {
+            let errMessage = msg.replace("ERROR_", "").replaceAll("_", " ");
+            setInn("logTag", `Module Error: ${errMessage.charAt(0).toUpperCase() + errMessage.slice(1).toLowerCase()}`);
+            console.log(`Error: ${msg}`);
+            clearTimeout(reqTimeout);
+            commandQueue = [];
+            isProcessing = false;
+            return;
+        }
+        if (msg.startsWith("WARN_")) {
+            let warnMessage = msg.replace("ERROR_", "").replaceAll("_", " ");
+            setInn("logTag", `Warning: ${warnMessage.charAt(0).toUpperCase() + warnMessage.slice(1).toLowerCase()}`);
+            console.log(`Warning: ${msg}`);
+            return;
+        }
+
+        setInn("logTag", `Unknown Message: ${msg}`);
+    };
+}
+
 // Script D
-let pxInd, stage;
 const maxChunkSize = 1024;
 let commandQueue = [];
 let queueIndex = 0;
 let isProcessing = false;
 
-function byteToStr(v) { return String.fromCharCode((v & 0xF) + 97, ((v >> 4) & 0xF) + 97); }
-function wordToStr(v) { return byteToStr(v & 0xFF) + byteToStr((v >> 8) & 0xFF); }
+function byteToStr(v) { return String.fromCharCode((v & 0x77) + 1); } // Save each byte as ascii
+function wordToStr(v) { return byteToStr((v >> 8) & 0xFF) + byteToStr(v & 0xFF); }
 
 
 function enqueueCommand(cmdData, logMsg, progress) {
@@ -659,38 +679,39 @@ function advanceQueue(q = 0) {
     reqTimeout = setTimeout(() => advanceQueue(q), 1000);
 }
 
-const COLOURR_TYPE = {
-    FOUR_BIT: -2,
+const COLOUR_TYPE = {
+    THREE_BIT: -2,
     TWO_BIT: -1,
     ONE_BIT: 0,
 }
 
 function EPDSendChunk(colourData, colourType, startProg, endProg, excludeColour = 0) {
+    let pxInd = 0;
     while (pxInd < colourData.length) {
         let msgData = "";
-        if (colourType == COLOURR_TYPE.FOUR_BIT) { // 4-bit colours
+        if (colourType == COLOUR_TYPE.THREE_BIT) { // 3-bit colour (<= 8 colours)
             while ((pxInd < colourData.length) && (msgData.length < maxChunkSize)) {
-                let v = 0;
-                for (let i = 0; i < 16; i += 4)
+                let byte = 0;
+                for (let i = 0; i < 8; i += 4)
                     if (pxInd < colourData.length)
-                        v |= (colourData[pxInd++] << i);
-                msgData += wordToStr(v);
+                        byte |= (colourData[pxInd++] << (4 - i));
+                msgData += byteToStr(byte);
             }
-        } else if (colourType == COLOURR_TYPE.TWO_BIT) { // 2-bit colours
+        } else if (colourType == COLOUR_TYPE.TWO_BIT) { // 2-bit colour  (<= 4 colours)
             while ((pxInd < colourData.length) && (msgData.length < maxChunkSize)) {
-                let v = 0;
-                for (let i = 0; i < 16; i += 2)
+                let byte = 0;
+                for (let i = 0; i < 8; i += 2)
                     if (pxInd < colourData.length)
-                        v |= (colourData[pxInd++] << i);
-                msgData += wordToStr(v);
+                        byte |= (colourData[pxInd++] << (6 - i));
+                msgData += byteToStr(byte);
             }
-        } else if (colourType == COLOURR_TYPE.ONE_BIT) { // 1-bit colours
+        } else if (colourType == COLOUR_TYPE.ONE_BIT) { // 1-bit colour (monochrome)
             while ((pxInd < colourData.length) && (msgData.length < maxChunkSize)) {
-                let v = 0;
+                let byte = 0;
                 for (let i = 0; i < 8; i++)
                     if ((pxInd < colourData.length) && (colourData[pxInd++] != excludeColour))
-                        v |= (128 >> i);
-                msgData += byteToStr(v);
+                        byte |= (0x80 >> i);
+                msgData += byteToStr(byte);
             }
         } else {
             alert("ERROR: Invalid colour type in code.");
@@ -712,68 +733,68 @@ function uploadImage() {
 
     console.log("Processing Uploads...");
 
-    enqueueCommand("INIT_" + epdIndex, "Initialising Display", 1);
+    enqueueCommand("INITP_" + epdIndex, "Initialising PSRAM", 1);
+    // enqueueCommand("INIT_" + epdIndex, "Initialising display", 1)S;
 
     if (epdIndex == 50) { // 13.3 6 colors (split 1200->600+600)
-        let leftA = [], rightA = [];
+        let lData = [], rData = [];
         let w = dstImgData.width, h = dstImgData.height;
         for (let row = 0; row < h; row++) {
             let base = row * w;
-            for (let xx = 0; xx < 600; xx++) leftA.push(dstColourCodesBuffer[base + xx]);
-            for (let xx = 600; xx < w; xx++) rightA.push(dstColourCodesBuffer[base + xx]);
+            for (let i = 0; i < 600; i++) lData.push(dstColourCodesBuffer[base + i]);
+            for (let i = 600; i < w; i++) rData.push(dstColourCodesBuffer[base + i]);
         }
 
-        pxInd = 0;
-        EPDSendChunk(leftA, COLOURR_TYPE.FOUR_BIT, 1, 50);
-        enqueueCommand("NEXT", "Switching Chip Select", 50);
-        pxInd = 0;
-        EPDSendChunk(rightA, COLOURR_TYPE.FOUR_BIT, 50, 99);
-        enqueueCommand("SHOW", "Displaying (DRF)", 100);
+        EPDSendChunk(lData, COLOUR_TYPE.THREE_BIT, 1, 50);
+        enqueueCommand("NEXTIC", "Switching chip select", 50);
+
+        EPDSendChunk(rData, COLOUR_TYPE.THREE_BIT, 50, 99);
+        enqueueCommand("SHOW", "Displaying image", 100);
     }
 
     else if ([3, 39, 43].includes(epdIndex)) { // 2.13
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 1, 99);
-        enqueueCommand("SHOW", "Displaying (DRF)", 100);
+        EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.ONE_BIT, 1, 99);
+        enqueueCommand("SHOW", "Displaying image", 100);
     }
 
     else if (epdIndex == 40) { // 2.13 B V4
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 1, 50);
-        enqueueCommand("NEXT", "Switching Chip Select", 50);
-        pxInd = 0;
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 50, 99, 3);
-        enqueueCommand("SHOW", "Displaying (DRF)", 100);
+        EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.ONE_BIT, 1, 50);
+        enqueueCommand("NEXTIC", "Switching chip select", 50);
+
+        EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.ONE_BIT, 50, 99, 3);
+        enqueueCommand("SHOW", "Displaying image", 100);
     }
 
     else if ([0, 3, 6, 7, 9, 12, 16, 19, 22, 26, 27, 28].includes(epdIndex)) {
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 1, 99);
-        enqueueCommand("SHOW", "Displaying (DRF)", 100);
+        EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.ONE_BIT, 1, 99);
+        enqueueCommand("SHOW", "Displaying image", 100);
     }
 
     else if (epdIndex > 15 && epdIndex < 22) {
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.TWO_BIT, 1, 99);
-        enqueueCommand("SHOW", "Displaying (DRF)", 100);
+        EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.TWO_BIT, 1, 99);
+        enqueueCommand("SHOW", "Displaying image", 100);
     }
 
     else if (epdIndex == 25 || epdIndex == 37) { // 7 colors
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.FOUR_BIT, 1, 99);
-        enqueueCommand("SHOW", "Displaying (DRF)", 100);
+        EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.THREE_BIT, 1, 99);
+        enqueueCommand("SHOW", "Displaying image", 100);
     }
 
     else if (epdIndex == 49) { // 6 colors
-        EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.FOUR_BIT, 1, 99);
-        enqueueCommand("SHOW", "Displaying (DRF)", 100);
+        EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.THREE_BIT, 1, 99);
+        enqueueCommand("SHOW", "Displaying image", 100);
     }
 
     else {
         console.log("Unknown EPD index, uploading default protocol.");
         if (epdIndex == 23)
-            EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 1, 99);
+            EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.ONE_BIT, 1, 99);
         else {
-            EPDSendChunk(dstColourCodesBuffer, ([1, 12].includes(epdIndex)) ? COLOURR_TYPE.TWO_BIT : COLOURR_TYPE.ONE_BIT, 1, 50);
-            enqueueCommand("NEXT", "Switching Chip Select", 50);
-            EPDSendChunk(dstColourCodesBuffer, COLOURR_TYPE.ONE_BIT, 50, 99, 3);
+            EPDSendChunk(dstColourCodesBuffer, ([1, 12].includes(epdIndex)) ? COLOUR_TYPE.TWO_BIT : COLOUR_TYPE.ONE_BIT, 1, 50);
+            enqueueCommand("NEXTIC", "Switching chip select", 50);
+            EPDSendChunk(dstColourCodesBuffer, COLOUR_TYPE.ONE_BIT, 50, 99, 3);
         }
-        enqueueCommand("SHOW", "Displaying (DRF)", 100);
+        enqueueCommand("SHOW", "Displaying image", 100);
 
     }
 
@@ -789,9 +810,23 @@ function clearImage() {
     isProcessing = true;
 
     console.log("Processing Uploads...");
-    enqueueCommand("INIT_" + epdIndex, "Initialising Display", 25);
-    enqueueCommand("CLEAR", "Uploading Clear Image", 75);
-    enqueueCommand("SHOW", "Displaying (DRF)", 100);
+    enqueueCommand("INIT_" + epdIndex, "Initialising display", 25);
+    enqueueCommand("CLEAR", "Uploading clear image", 75);
+    enqueueCommand("SHOW", "Displaying image", 100);
+
+    console.log("Uploading...");
+    advanceQueue();
+}
+
+function changeImage(cmd) {
+    if (ws.readyState !== WebSocket.OPEN) { alert("Hardware disconnected."); return; }
+
+    commandQueue = [];
+    queueIndex = 0;
+    isProcessing = true;
+
+    console.log("Processing Uploads...");
+    enqueueCommand(`PSRAM_${cmd}`, "Changing image", 50);
 
     console.log("Uploading...");
     advanceQueue();

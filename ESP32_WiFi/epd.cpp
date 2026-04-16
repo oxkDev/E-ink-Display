@@ -14,8 +14,9 @@
 #include "epd.h"
 
 SPIClass fspi(FSPI);
-
 SPISettings spi_settings(20000000, MSBFIRST, SPI_MODE0);
+
+bool EPD_isOn = false;
 
 void EPD_initSPI() {
   pinMode(PIN_SPI_BUSY, INPUT);
@@ -131,11 +132,13 @@ bool EPD_Reset() {
 void EPD_Exit() {
   Serial.println("[EPD] HAT+ Power Off.");
   delay(300);
+  EPD_CS_ALL(0);
   digitalWrite(PIN_SPI_RST, LOW);
   digitalWrite(PIN_SPI_DIN, LOW);
   digitalWrite(PIN_SPI_SCK, LOW);
   delay(100);
   digitalWrite(PIN_SPI_PWR, LOW);
+  EPD_isOn = false;
 }
 
 /* The procedure of sending a byte to e-Paper by SPI -------------------------*/
@@ -154,7 +157,7 @@ void EPD_SendByte(byte data) {
   fspi.endTransaction();
 }
 
-void EPD_SendByteList(std::vector<byte> dataList) {
+void EPD_SendByteList(std::list<byte> dataList) {
   fspi.beginTransaction(spi_settings);
   for (byte data : dataList)
     fspi.transfer(data);
@@ -204,7 +207,7 @@ void EPD_SendData_13in3E6(byte data) {
   EPD_SendByte(data);
 }
 
-void EPD_SendDataList_13in3E6(std::vector<byte> dataList) {
+void EPD_SendDataList_13in3E6(std::list<byte> dataList) {
   digitalWrite(PIN_SPI_DC, HIGH);
   EPD_SendByteList(dataList);
 }
@@ -308,9 +311,11 @@ EPD_dispInfo EPD_dispMass[] = {
 bool EPD_invert;           // If true, then image data bits must be inverted
 int EPD_dispIndex = 50;    // The index of the e-Paper's type
 int EPD_dispX, EPD_dispY;  // Current pixel's coordinates (for 2.13 only)
-void (*EPD_dispLoad)();    // Pointer on a image data writting function
 
-/* Initialization of an e-Paper ----------------------------------------------*/
+/* e-paper data loading ------------------------------------------------------*/
+void (*EPD_dispLoad)();  // Pointer on a image data writting function
+
+/* e-paper initialization ----------------------------------------------------*/
 bool EPD_dispInit() {
   // Call initialization function
   bool success = EPD_dispMass[EPD_dispIndex].init() == 0;
@@ -325,7 +330,31 @@ bool EPD_dispInit() {
   // The inversion of image data bits isn't needed by default
   EPD_invert = false;
 
-  return success;
+  return EPD_isOn = success;
+}
+
+/* e-paper IC change ---------------------------------------------------------*/
+void EPD_dispNext() {
+  int nextCode = EPD_dispMass[EPD_dispIndex].next;
+
+  // Instruction code for for writting data into e-paper's memory
+  if (EPD_dispIndex == 34) {
+    if (flag == 0)
+      nextCode = 0x26;
+    else
+      nextCode = 0x13;
+  } else if (EPD_dispIndex == 50) {
+    EPD_CS_ALL(1);
+    digitalWrite(PIN_SPI_CS_S, 0);
+    EPD_SendCommand_13in3E6(0x10);
+  }
+
+  if (nextCode != -1) {  // Skip if -1, else send set "next" command code.
+    EPD_SendCommand(nextCode);
+    delay(2);
+  }
+
+  EPD_dispLoad = EPD_dispMass[EPD_dispIndex].loadRed;
 }
 
 /* Image data loading function for a-type e-Paper ----------------------------*/
@@ -334,7 +363,7 @@ void EPD_loadA() {
   int pos = 0;
 
   // Enumerate all of image data bytes
-  while (pos < Buff_msgIndex) {
+  while (pos < Buff_msgLength) {
     // Get current byte
     byte value = Buff_getByte(pos);
     //		Serial.printf("address:%d, data:%x ",pos, value);
@@ -347,7 +376,7 @@ void EPD_loadA() {
     EPD_SendData((byte)value);
 
     // Increment the current byte index on 2 characters
-    pos += 2;
+    pos++;
   }
 }
 
@@ -356,7 +385,7 @@ void EPD_loadAFilp() {
   int pos = 0;
 
   // Enumerate all of image data bytes
-  while (pos < Buff_msgIndex) {
+  while (pos < Buff_msgLength) {
     // Get current byte
     byte value = Buff_getByte(pos);
 
@@ -367,7 +396,7 @@ void EPD_loadAFilp() {
     EPD_SendData(~(byte)value);
 
     // Increment the current byte index on 2 characters
-    pos += 2;
+    pos++;
   }
 }
 
@@ -377,7 +406,7 @@ void EPD_loadB() {
   int pos = 0;
 
   // Enumerate all of image data bytes
-  while (pos < Buff_msgIndex) {
+  while (pos < Buff_msgLength) {
     // Get current word from obtained image data
     byte valueA = (int)Buff_getByte(pos) + ((int)Buff_getByte(pos + 2) << 8);
 
@@ -402,7 +431,7 @@ void EPD_loadB() {
     EPD_SendData((byte)valueB);
 
     // Increment the current byte index on 2 characters
-    pos += 4;
+    pos += 2;
   }
 }
 
@@ -415,7 +444,7 @@ void EPD_loadC() {
   EPD_Send_4(0x45, 0, 0, 249, 0);  //SET_RAM_Y_ADDRESS_START_END_POSITION LO(y), HI(y), LO(h - 1), HI(h - 1)
 
   // Enumerate all of image data bytes
-  while (pos < Buff_msgIndex) {
+  while (pos < Buff_msgLength) {
     // Before write a line of image data
     // 2.13 e-Paper requires to set the address counter
     // Every line has 15*8-6 pixels + 6 empty bits, totally 15*8 bits
@@ -429,7 +458,7 @@ void EPD_loadC() {
     EPD_SendData((byte)Buff_getByte(pos));
 
     // Increment the current byte index on 2 characters
-    pos += 2;
+    pos++;
 
     // EPD_dispX and EPD_dispY increments
     if (++EPD_dispX > 15) {
@@ -447,7 +476,7 @@ void EPD_loadD() {
   int pos = 0;
 
   // Enumerate all of image data bytes
-  while (pos < Buff_msgIndex) {
+  while (pos < Buff_msgLength) {
     // Get current byte from obtained image data
     byte valueA = Buff_getByte(pos);
 
@@ -459,7 +488,7 @@ void EPD_loadD() {
     EPD_SendData((byte)((valueA & 0x02) ? 0x30 : 0x00) + ((valueA & 0x01) ? 0x03 : 0x00));
 
     // Increment the current byte index on 2 characters
-    pos += 2;
+    pos++;
   }
 }
 
@@ -469,7 +498,7 @@ void EPD_loadE() {
   int pos = 0;
 
   // Enumerate all of image data bytes
-  while (pos < Buff_msgIndex) {
+  while (pos < Buff_msgLength) {
     // Get current byte from obtained image data
     byte value = Buff_getByte(pos);
 
@@ -493,7 +522,7 @@ void EPD_loadE() {
     EPD_SendData((C << 4) + D);
 
     // Increment the current byte index on 2 characters
-    pos += 2;
+    pos++;
   }
 }
 
@@ -503,7 +532,7 @@ void EPD_loadF() {
   int pos = 0;
 
   // Enumerate all of image data bytes
-  while (pos < Buff_msgIndex) {
+  while (pos < Buff_msgLength) {
     // Get current byte from obtained image data
     byte value = Buff_getByte(pos);
     byte value1 = Buff_getByte(pos + 2);
@@ -523,7 +552,7 @@ void EPD_loadF() {
     EPD_SendData((C << 4) + D);
 
     // Increment the current byte index on 2 characters
-    pos += 4;
+    pos += 2;
   }
 }
 
@@ -533,20 +562,16 @@ void EPD_loadG() {
   int pos = 0;
 
   // Enumerate all of image data bytes
-  while (pos < Buff_msgIndex) {
+  while (pos < Buff_msgLength) {
     // Get current byte from obtained image data
     byte value = Buff_getByte(pos);
 
     // Switch the positions of the two 4-bits pixels
-    // Black:0b000;White:0b001;Green:0b010;Blue:0b011;Red:0b100;Yellow:0b101;Orange:0b110;
-    int A = (value)&0x07;
-    int B = (value >> 4) & 0x07;
-
     // Write the data into e-Paper's memory
-    EPD_SendData((byte)((A << 4) + B));
+    EPD_SendData(value);
 
     // Increment the current byte index on 2 characters
-    pos += 2;
+    pos++;
   }
 }
 
@@ -554,47 +579,52 @@ void EPD_load_13in3E6() {
   // Get the index of the image data begin
   int pos = 0;
 
-  if (!Buff_usePsram) {
-    fspi.beginTransaction(spi_settings);
+  if (Buff_usePsram) {
     // Enumerate all of image data bytes
-    while (pos < Buff_msgIndex) {
-      // Get current byte from obtained image data
-      byte value = Buff_getByte(pos);
-
-      // Switch the positions of the two 4-bits pixels
-      // Write the data into e-Paper's memory
-      // EPD_SendData_13in3E6((byte)(A << 4) + B);
-      fspi.transfer((byte)((value & 0x07) << 4) + ((value >> 4) & 0x07));
-      // Black:0b000;White:0b001;Green:0b010;Blue:0b011;Red:0b100;Yellow:0b101;Orange:0b110;
-
-      // Increment the current byte index on 2 characters
-      pos += 2;
-    }
-    fspi.endTransaction();
-  } else {
-    // Enumerate all of image data bytes
-    while (pos < Buff_msgIndex) {
+    while (pos < Buff_msgLength) {
       // Get current byte from obtained image data
       byte value = Buff_getByte(pos);
 
       // Write to PSRAM
-      Buff_writePsram((byte)((value & 0x07) << 4) + ((value >> 4) & 0x07));
+      Buff_writeImage(value);
 
       // Increment the current byte index on 2 characters
-      pos += 2;
+      pos++;
     }
+  } else {
+    fspi.beginTransaction(spi_settings);
+    // Enumerate all of image data bytes
+    while (pos < Buff_msgLength) {
+      // Get current byte from obtained image data
+      byte value = Buff_getByte(pos);
+
+      // Switch positions of  two 4-bit pixels for MSB loading, Write into e-Paper's memory
+      fspi.transfer(value);
+      // Black:0b000;White:0b001;Green:0b010;Blue:0b011;Red:0b100;Yellow:0b101;Orange:0b110;
+
+      // Increment the current byte index on 2 characters
+      pos++;
+    }
+    fspi.endTransaction();
   }
 }
 
-void EPD_load_psram_13in3E6() {
+bool EPD_load_image_13in3E6(int imgIndex) {
+  if (!Buff_hasPsram)
+    return false;
+
+  if (imgIndex > -1)
+    Buff_selectImage(imgIndex);
+  
   int pos = 0;
 
+  EPD_CS_ALL(1);
   digitalWrite(PIN_SPI_CS_M, 0);
   EPD_SendCommand_13in3E6(0x10);
 
   fspi.beginTransaction(spi_settings);
-  while (pos < Buff_psramSize && pos < 1600 * 300)
-    fspi.transfer(Buff_image[pos++]);
+  while (pos < Buff_image.size && pos < 1600 * 300)
+    fspi.transfer(Buff_image.data[pos++]);
   fspi.endTransaction();
 
   EPD_CS_ALL(1);
@@ -602,11 +632,13 @@ void EPD_load_psram_13in3E6() {
   EPD_SendCommand_13in3E6(0x10);
 
   fspi.beginTransaction(spi_settings);
-  while (pos < Buff_psramSize && pos < 1600 * 600)
-    fspi.transfer(Buff_image[pos++]);
+  while (pos < Buff_image.size && pos < 1600 * 600)
+    fspi.transfer(Buff_image.data[pos++]);
   fspi.endTransaction();
 
   EPD_CS_ALL(1);
+
+  return true;
 }
 
 /* Show image and turn to deep sleep mode (a-type, 4.2 and 2.7 e-Paper) ------*/

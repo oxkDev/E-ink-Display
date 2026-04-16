@@ -100,7 +100,7 @@ select.input_elm > option {
 
 .menu_button {
     width: 100%;
-    min-width: 200px;
+    min-width: 100px;
     margin: 10px 0;
     padding: 10px;
     border-radius: 15px;
