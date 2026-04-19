@@ -46,13 +46,6 @@ void GPIO_Mode(unsigned char GPIO_Pin, unsigned char Mode) {
   }
 }
 
-void EPD_CS_ALL(UBYTE Value) {
-  digitalWrite(PIN_SPI_CS_M, Value);
-#ifdef PIN_SPI_CS_S
-  digitalWrite(PIN_SPI_CS_S, Value);
-#endif
-}
-
 /* Waiting the e-Paper is ready for further instructions ---------------------*/
 bool EPD_WaitUntilIdle(uint8_t timeout, uint8_t min) {
   //0: busy, 1: idle
@@ -198,10 +191,7 @@ void EPD_SendCommand(byte command) {
 
 void EPD_SendCommand_13in3E6(byte command) {
   digitalWrite(PIN_SPI_DC, LOW);
-  // EPD_CS_PIN(EPD_csPin);
   EPD_SendByte(command);
-  // EPD_CS_ALL(1);
-  digitalWrite(PIN_SPI_DC, HIGH);
 }
 
 /* Sending a byte as a data --------------------------------------------------*/
@@ -214,16 +204,12 @@ void EPD_SendData(byte data) {
 
 void EPD_SendData_13in3E6(byte data) {
   digitalWrite(PIN_SPI_DC, HIGH);
-  // EPD_CS_PIN(EPD_csPin);
   EPD_SendByte(data);
-  // EPD_CS_ALL(1);
 }
 
 void EPD_SendDataList_13in3E6(std::list<byte> dataList) {
   digitalWrite(PIN_SPI_DC, HIGH);
-  // EPD_CS_PIN(EPD_csPin);
   EPD_SendByteList(dataList);
-  // EPD_CS_ALL(1);
 }
 
 /* Send a one-argument command -----------------------------------------------*/
@@ -267,7 +253,7 @@ void EPD_Send_5(byte c, byte v1, byte v2, byte v3, byte v4, byte v5) {
 }
 
 /* Array of sets describing the usage of e-Papers ----------------------------*/
-const EPD_dispInfo EPD_dispMass[] = {
+EPD_dispInfo EPD_dispMass[] = {
   { EPD_Init_1in54, EPD_loadA, -1, 0, EPD_1IN54_Show, "1.54 inch" },                             // a 0
   { EPD_Init_1in54b, EPD_loadB, 0x13, EPD_loadA, EPD_showB, "1.54 inch b" },                     // b 1
   { EPD_Init_1in54c, EPD_loadA, 0x13, EPD_loadA, EPD_showB, "1.54 inch c" },                     // c 2
@@ -323,7 +309,7 @@ const EPD_dispInfo EPD_dispMass[] = {
 
 /* e-Paper initialization functions ------------------------------------------*/
 bool EPD_invert;           // If true, then image data bits must be inverted
-const int EPD_dispIndex;   // The index of the e-Paper's type
+int EPD_dispIndex = 50;    // The index of the e-Paper's type
 int EPD_dispX, EPD_dispY;  // Current pixel's coordinates (for 2.13 only)
 
 /* e-paper data loading ------------------------------------------------------*/
@@ -336,8 +322,6 @@ bool EPD_dispInit() {
 
   // Set loading function for black channel
   EPD_dispLoad = EPD_dispMass[EPD_dispIndex].loadBlk;
-  if (EPD_dispIndex == 50)
-    EPD_csPin = PIN_SPI_CS_M;
 
   // Set initial coordinates
   EPD_dispX = 0;
@@ -361,8 +345,7 @@ void EPD_dispNext() {
       nextCode = 0x13;
   } else if (EPD_dispIndex == 50) {
     EPD_CS_ALL(1);
-    EPD_csPin = PIN_SPI_CS_S;
-    EPD_CS_PIN(EPD_csPin);
+    digitalWrite(PIN_SPI_CS_S, 0);
     EPD_SendCommand_13in3E6(0x10);
   }
 
@@ -593,27 +576,47 @@ void EPD_load_13in3E6() {
   // Get the index of the image data begin
   int pos = 0;
 
-  // EPD_CS_PIN(EPD_csPin);
-  epdSpi.beginTransaction(epdSpiSettings);
-  // Enumerate all of image data bytes
-  while (pos < Buff_msgLength)
-    epdSpi.transfer(Buff_getByte(pos++));
-  
-  epdSpi.endTransaction();
-  // EPD_CS_ALL(1);
+  if (Buff_usePsram) {
+    // Enumerate all of image data bytes
+    while (pos < Buff_msgLength) {
+      // Get current byte from obtained image data
+      byte value = Buff_getByte(pos);
+
+      // Write to PSRAM
+      Buff_writeImage(value);
+
+      // Increment the current byte index on 2 characters
+      pos++;
+    }
+  } else {
+    epdSpi.beginTransaction(epdSpiSettings);
+    // Enumerate all of image data bytes
+    while (pos < Buff_msgLength) {
+      // Get current byte from obtained image data
+      byte value = Buff_getByte(pos);
+
+      // Switch positions of  two 4-bit pixels for MSB loading, Write into e-Paper's memory
+      epdSpi.transfer(value);
+      // Black:0b000;White:0b001;Green:0b010;Blue:0b011;Red:0b100;Yellow:0b101;Orange:0b110;
+
+      // Increment the current byte index on 2 characters
+      pos++;
+    }
+    epdSpi.endTransaction();
+  }
 }
 
 bool EPD_load_image_13in3E6(int imgIndex) {
-  if (!Buff_hasPsram || !EPD_isOn)
+  if (!Buff_hasPsram)
     return false;
 
   if (imgIndex > -1)
     Buff_selectImage(imgIndex);
-
+  
   int pos = 0;
 
-  // EPD_CS_ALL(1);
-  EPD_CS_PIN(PIN_SPI_CS_M);
+  EPD_CS_ALL(1);
+  digitalWrite(PIN_SPI_CS_M, 0);
   EPD_SendCommand_13in3E6(0x10);
 
   epdSpi.beginTransaction(epdSpiSettings);
@@ -621,7 +624,8 @@ bool EPD_load_image_13in3E6(int imgIndex) {
     epdSpi.transfer(Buff_image.data[pos++]);
   epdSpi.endTransaction();
 
-  EPD_CS_PIN(PIN_SPI_CS_S);
+  EPD_CS_ALL(1);
+  digitalWrite(PIN_SPI_CS_S, 0);
   EPD_SendCommand_13in3E6(0x10);
 
   epdSpi.beginTransaction(epdSpiSettings);

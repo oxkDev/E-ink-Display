@@ -146,6 +146,18 @@ bool EPD_13in3b_Show(void) {
 
 /*************************13.3E6**********************************/
 
+int EPD_csPin;
+
+void EPD_CS_PIN(int pin) {
+  digitalWrite(PIN_SPI_CS_M, GPIO_PIN_RESET);
+  digitalWrite(PIN_SPI_CS_S, GPIO_PIN_RESET);
+
+  if (pin == PIN_SPI_CS_M)
+    digitalWrite(PIN_SPI_CS_S, GPIO_PIN_SET);
+  else if (pin == PIN_SPI_CS_S)
+    digitalWrite(PIN_SPI_CS_M, GPIO_PIN_SET);
+}
+
 int EPD_13in3E_init(void) {
   Serial.println("\r\n[EPD] EPD13in3E6 Init");
   if (!EPD_Reset()) return 1;

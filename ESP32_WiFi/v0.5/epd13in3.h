@@ -14,6 +14,8 @@
 
 #include "../epd.h"
 
+#define UBYTE uint8_t
+
 #define EPD_13in3E_BLACK 0x0
 #define EPD_13in3E_WHITE 0x1
 #define EPD_13in3E_YELLOW 0x2
@@ -30,6 +32,10 @@ int EPD_13in3b_init(void);
 bool EPD_13in3b_Show(void);
 
 /*************************13.3E6**********************************/
+
+extern int EPD_csPin = PIN_SPI_CS_M;
+
+void EPD_CS_PIN(int pin);
 int EPD_13in3E_init(void);
 bool EPD_13in3E_Show(void);
 void EPD_13in3E_Clear(uint8_t colourCode);

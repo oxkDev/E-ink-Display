@@ -35,7 +35,7 @@ void setup() {
   Serial.print("\n[INIT] SPI and PSRAM Init.\n");
   EPD_initSPI();
   Buff_init();
-
+  
   delay(1000);
   Serial.print("\n[INIT] EPD Clear Image Test.\n");
   bool success = EPD_dispInit();
@@ -43,7 +43,8 @@ void setup() {
   if (success) {
     EPD_13in3E_Clear(EPD_13in3E_WHITE);
 
-    Srvr_setWifiPwr(WIFI_LOW_PWR);
+    if (!WiFi.setTxPower(WIFI_LOW_PWR))
+      Serial.println("[WARN] Failed to set wifi transmission power to low power mode.");
     delay(2000);
     success &= EPD_13in3E_Show();
   }
@@ -54,7 +55,8 @@ void setup() {
 
   EPD_Exit();
   delay(1000);
-  Srvr_setWifiPwr(WIFI_NORM_PWR);
+  if (!WiFi.setTxPower(WIFI_NORM_PWR))
+    Serial.println("[WARN] Failed to set wifi transmission power to 19.5dBm.");
 
   EPD_Status = READY;
   if (success)

@@ -20,7 +20,6 @@
 
 /* Size, current position index and byte array of the buffer -----------------*/
 #define BUFF_MAX_CHUNK_SIZE 1024 + 100
-#define BUFF_MAX_IMAGE_SIZE 1600 * 1200 / 2
 
 extern byte Buff_message[];
 extern uint32_t Buff_msgLength;

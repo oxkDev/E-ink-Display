@@ -31,5 +31,6 @@
   "terminal.integrated.profiles.osx": null,
   "files.autoGuessEncoding": true,
   "files.autoSave": "off",
-  "editor.defaultColorDecorators": true
+  "editor.defaultColorDecorators": true,
+  "arduino.compile.warnings": "More"
 }

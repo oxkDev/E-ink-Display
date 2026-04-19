@@ -87,7 +87,7 @@ extern unsigned long lastCleanup;
 #if ACCESS_POINT == false
 bool WiFiAttemptConnect();
 #endif
-bool Srvr_setWifiPwr(wifi_power_t wifiPwr = WIFI_NORM_PWR);
+
 bool Srvr_setup();
 void Srvr_loop();
 

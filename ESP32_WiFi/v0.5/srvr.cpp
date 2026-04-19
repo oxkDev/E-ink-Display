@@ -55,7 +55,7 @@ void wsSendCur(const String msg) {
   if (curClientId == 0) {
     if (ws.count() > 0)
       ws.textAll(msg);
-
+    
     return;
   }
 
@@ -158,18 +158,19 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       // EPD Requests
 
       if (msg.startsWith("INIT")) {
-        int dispIndex = msg.substring(msg.startsWith("INITP_") ? 6 : 5).toInt();
-        if (EPD_dispIndex != dispIndex) {
-          wsSendCur("ERROR_INCORRECT_DISPLAY");
-          curClientId = 0;
-          return;
-        }
-
         curClientTimestamp = millis();
         reqIndex = 0;
         curClientId = client->id();
         client->text("RUNNING_" + String(curClientId));
         wsSendAll("BUSY");
+        // Getting of e-Paper's type
+        EPD_dispIndex = msg.substring(msg.startsWith("INITP_") ? 6 : 5).toInt();
+
+        if (EPD_dispIndex < 0 || EPD_dispIndex > 50) {
+          wsSendCur("ERROR_UNKNOWN_DISPLAY");
+          curClientId = 0;
+          return;
+        }
 
         EPD_Status = msg.startsWith("INITP_") ? PSRAM : INIT;
 
@@ -178,12 +179,6 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       }
 
       if (msg.startsWith("LOAD_")) {
-        if (!EPD_isOn && !Buff_usePsram) {
-          client->text("ERROR_DISPLY_NOT_INITIALISED");
-          EPD_Status = EXIT;
-          return;
-        }
-
         client->text("RUNNING_" + String(curClientId));
         reqIndex++;
         Serial.printf("[WS] LOAD (%lu)", reqIndex);
@@ -191,20 +186,7 @@ void wsEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 
         Buff_msgLength = dataStr.length();
         dataStr.getBytes(Buff_message, Buff_msgLength + 1);
-
-        if (Buff_usePsram) {
-          int pos = 0;
-          // Enumerate all of image data bytes
-          while (pos < Buff_msgLength) {
-            byte value = Buff_getByte(pos);
-            Buff_writeImage(value);
-            pos++;
-          }
-          EPD_Status = READY;
-          wsSendCur("ACK_" + String(reqIndex));
-          Serial.println(" - Done");
-        } else
-          EPD_Status = LOAD;
+        EPD_Status = LOAD;
         return;
       }
 
@@ -407,9 +389,21 @@ void EPDHandler() {
       }
     }
 
-    Srvr_setWifiPwr(WIFI_LOW_PWR);
+    if (!WiFi.setTxPower(WIFI_LOW_PWR))
+      Serial.println("[WARN] Failed to set wifi transmission power to 15dBm.");
+    delay(2000);
+#if !ACCESS_POINT
+    Serial.printf("[WiFi] Low Power RSSI: %d\n", WiFi.RSSI());
+#endif
     bool success = EPD_dispMass[EPD_dispIndex].show();
-    Srvr_setWifiPwr(WIFI_NORM_PWR);
+    delay(1000);
+
+    if (!WiFi.setTxPower(WIFI_NORM_PWR))
+      Serial.println("[WARN] Failed to set wifi transmission power to 2dBm.");
+    delay(1000);
+#if !ACCESS_POINT
+    Serial.printf("[WiFi] Normal Power RSSI: %d\n", WiFi.RSSI());
+#endif
 
     if (success) {
       wsSendCur("DONE");
@@ -442,19 +436,8 @@ void EPDHandler() {
   }
 }
 
-/* WiFi -----------------------------------------------------------------------*/
-bool Srvr_setWifiPwr(wifi_power_t wifiPwr) {
-  if (!WiFi.setTxPower(WIFI_NORM_PWR)) {
-    Serial.printf("[WARN] Failed to set wifi transmission power to %ddBm.\n", wifiPwr);
-    return false;
-  }
-  delay(1000);
-#if !ACCESS_POINT
-  Serial.printf("[WiFi] %ddBm power RSSI: %d\n", wifiPwr, WiFi.RSSI());
-#endif
-  return true;
-}
-
+/* Server initialization ------------------------------------------------------*/
+#if ACCESS_POINT == false
 bool WiFiAttemptConnect() {
   WiFi.begin(ssid, password);
 
@@ -475,6 +458,7 @@ bool WiFiAttemptConnect() {
 
   return true;
 }
+#endif
 
 bool Srvr_setup() {
 #if ACCESS_POINT

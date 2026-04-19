@@ -43,13 +43,8 @@ bool Buff_newImage(uint32_t size) {
   if (!Buff_hasPsram)
     return false;
 
-  if (size > BUFF_MAX_IMAGE_SIZE) {
-    Serial.printf("[BUFF] Image size exceeds maximum: %u > %u\n", size, BUFF_MAX_IMAGE_SIZE);
-    return false;
-  }
-
   if (size > ESP.getFreePsram()) {
-    Serial.printf("[BUFF] PSRAM insufficient space: %u / %u required\n", size, ESP.getFreePsram());
+    Serial.printf("[BUFF] PSRAM insufficient space: %d / %d required\n", size, ESP.getFreePsram());
     // return Buff_usePsram = false;
 
     Serial.println("[BUFF] Deleting last image.");
@@ -62,7 +57,6 @@ bool Buff_newImage(uint32_t size) {
     Serial.println("[BUFF] PSRAM allocation error.");
     return Buff_usePsram = false;
   }
-  
   Buff_imgDataIndex = 0;
   Buff_imgIndex = 0;
   Buff_image.size = size;

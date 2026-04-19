@@ -77,7 +77,6 @@ extern bool EPD_isOn;
 
 void EPD_initSPI();
 void GPIO_Mode(unsigned char GPIO_Pin, unsigned char Mode);
-void EPD_CS_ALL(byte Value);
 
 /* Waiting the e-Paper is ready for further instructions ---------------------*/
 bool EPD_WaitUntilIdle(uint8_t timeout = 100, uint8_t min = 0);
@@ -101,7 +100,7 @@ void EPD_SendCommand_13in3E6(byte command);
 /* Sending data --------------------------------------------------------------*/
 void EPD_SendData(byte data);
 void EPD_SendData_13in3E6(byte data);
-void EPD_SendDataList_13in3E6(std::list<byte> dataList);
+void EPD_SendDataList_13in3E6(std::vector<byte> dataList);
 
 /* Send command with arguments -----------------------------------------------*/
 void EPD_Send_1(byte c, byte v1);
@@ -121,12 +120,12 @@ struct EPD_dispInfo {
 };
 
 /* Array of sets describing the usage of e-Papers ----------------------------*/
-extern const EPD_dispInfo EPD_dispMass[];
+extern EPD_dispInfo EPD_dispMass[];
 
 /* EPD Model Specific Functions ----------------------------------------------*/
-extern const int EPD_dispIndex = 50;   // The index of the e-Paper's type
-extern bool EPD_invert;           // If true, then image data bits must be inverted
-extern int EPD_dispX, EPD_dispY;  // Current pixel's coordinates (for 2.13 only)
+extern bool EPD_invert;             // If true, then image data bits must be inverted
+extern int EPD_dispIndex;           // The index of the e-Paper's type
+extern int EPD_dispX, EPD_dispY;    // Current pixel's coordinates (for 2.13 only)
 
 /* e-paper data loading ------------------------------------------------------*/
 extern void (*EPD_dispLoad)(void);  // Pointer on a image data writting function
